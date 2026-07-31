@@ -84,6 +84,10 @@ class TestGetPeerComparison:
             mock_yf.Industry.return_value = mock_industry
             result = stock_analyst.get_peer_comparison("TCS")
         assert result["peer_count"] >= 0
+        # Peer list should preserve exchange suffixes
+        symbols = {r["symbol"] for r in result["fundamental_comparison"]}
+        assert any(s.endswith(".NS") for s in symbols)
+        assert any(s.endswith(".BO") for s in symbols)
 
 
 class TestGetDcfValuation:

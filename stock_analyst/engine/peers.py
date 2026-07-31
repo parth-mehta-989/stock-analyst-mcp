@@ -20,11 +20,28 @@ def _strip_exchange(symbol: str) -> str:
     return symbol.upper().strip().replace(".NS", "").replace(".BO", "")
 
 
+def _exchange(symbol: str) -> str:
+    """Return exchange label from symbol suffix."""
+    s = symbol.upper().strip()
+    if s.endswith(".NS"):
+        return "NSE"
+    if s.endswith(".BO"):
+        return "BSE"
+    return ""
+
+
 class PeerAnalyzer:
     def __init__(self, provider: DataProvider, cache: Cache, config: Settings) -> None:
         self._provider = provider
         self._cache = cache
         self._config = config
+
+    def _full_symbol(self, symbol: str) -> str:
+        """Normalize symbol to include exchange suffix based on config default."""
+        s = symbol.upper().strip()
+        if s.endswith(".NS") or s.endswith(".BO"):
+            return s
+        return f"{s}{self._config.default_exchange}"
 
     def discover_peers(self, symbol: str) -> List[str]:
         """Discover peer symbols. Tries yfinance Industry API first, screener.in second."""
@@ -60,8 +77,8 @@ class PeerAnalyzer:
                 logger.debug("No top_companies for industry %s", industry_key)
                 return []
 
-            # index is symbol (e.g. TCS.NS), extract raw ticker
-            return [_strip_exchange(sym) for sym in top.index.tolist()]
+            # index is full Yahoo symbol with .NS/.BO suffix; preserve it
+            return [str(sym) for sym in top.index.tolist()]
         except Exception as e:
             logger.debug("yfinance Industry peer discovery failed: %s", e)
             return []
@@ -122,13 +139,13 @@ class PeerAnalyzer:
         if cached:
             return cached
 
-        all_symbols = [symbol] + peers
+        all_symbols = [self._full_symbol(symbol)] + [self._full_symbol(p) for p in peers]
         results = {}
 
         for sym in all_symbols:
             try:
                 info = self._provider.get_info(sym)
-                results[_strip_exchange(sym)] = {
+                results[sym] = {
                     "pe": info.get("trailingPE"),
                     "pb": info.get("priceToBook"),
                     "roe": info.get("returnOnEquity"),
@@ -141,6 +158,7 @@ class PeerAnalyzer:
                     "roa": info.get("returnOnAssets"),
                     "current_price": info.get("currentPrice"),
                     "name": info.get("longName", sym),
+                    "exchange": _exchange(sym),
                 }
             except Exception as e:
                 logger.debug("Failed to fetch peer %s: %s", sym, e)
@@ -159,24 +177,24 @@ class PeerAnalyzer:
         from stock_analyst.engine.technicals import TechnicalAnalyzer
 
         ta_analyzer = TechnicalAnalyzer(self._provider, self._cache, self._config)
-        all_symbols = [symbol] + peers
+        all_symbols = [self._full_symbol(symbol)] + [self._full_symbol(p) for p in peers]
         results = {}
 
         for sym in all_symbols:
             try:
                 tech = ta_analyzer.analyze(sym)
-                clean_sym = _strip_exchange(sym)
-                results[clean_sym] = {
+                results[sym] = {
                     k: tech.get(k)
                     for k in ["current_price", "rsi", "rsi_signal", "ema_trend",
                               "macd_signal", "overall_signal", "price_vs_52w_high_pct"]
                 }
                 # price vs EMA200
-                results[clean_sym]["price_vs_ema200"] = None
+                results[sym]["price_vs_ema200"] = None
                 ema200 = tech.get("ema_200")
                 cp = tech.get("current_price")
                 if ema200 and cp and ema200 > 0:
-                    results[clean_sym]["price_vs_ema200"] = round((cp - ema200) / ema200 * 100, 2)
+                    results[sym]["price_vs_ema200"] = round((cp - ema200) / ema200 * 100, 2)
+                results[sym]["exchange"] = _exchange(sym)
             except Exception as e:
                 logger.debug("Failed technical for peer %s: %s", sym, e)
 

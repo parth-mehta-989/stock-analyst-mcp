@@ -110,6 +110,22 @@ ratios = get_fundamentals("TCS")
 signals = get_technicals("INFY", period="6mo")
 ```
 
+## Testing
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=stock_analyst --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_peers.py -v
+```
+
 ## Data Sources
 
 - **yfinance** — OHLCV, financials, balance sheet, cashflow, info, peer discovery via Industry API

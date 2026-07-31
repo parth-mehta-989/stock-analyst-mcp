@@ -3,6 +3,21 @@
 from typing import Any, Dict, List, Optional
 
 
+def _strip_exchange(symbol: str) -> str:
+    """Remove .NS / .BO suffix and normalize."""
+    return symbol.upper().strip().replace(".NS", "").replace(".BO", "")
+
+
+def _exchange(symbol: str) -> str:
+    """Return exchange label from symbol suffix."""
+    s = symbol.upper().strip()
+    if s.endswith(".NS"):
+        return "NSE"
+    if s.endswith(".BO"):
+        return "BSE"
+    return ""
+
+
 def build_peer_comparison(
     target_symbol: str,
     peer_fundamentals: Dict[str, Any],
@@ -11,10 +26,16 @@ def build_peer_comparison(
     technical_metrics: List[str],
 ) -> Dict[str, Any]:
     """Build compact peer comparison with rankings."""
-    target_sym = target_symbol.upper().replace(".NS", "").replace(".BO", "")
+    target_sym = _strip_exchange(target_symbol)
+
+    # Find the full key for the target (e.g. TCS.NS) from the fundamentals dict
+    target_full = next(
+        (k for k in peer_fundamentals if _strip_exchange(k) == target_sym),
+        target_symbol,
+    )
 
     result: Dict[str, Any] = {
-        "target": target_sym,
+        "target": target_full,
         "peer_count": len(peer_fundamentals) - 1,
     }
 
@@ -22,7 +43,11 @@ def build_peer_comparison(
     if peer_fundamentals:
         fund_table = []
         for sym, data in peer_fundamentals.items():
-            row = {"symbol": sym, "name": data.get("name", sym)}
+            row = {
+                "symbol": sym,
+                "exchange": data.get("exchange") or _exchange(sym),
+                "name": data.get("name", sym),
+            }
             for metric in fundamental_metrics:
                 row[metric] = data.get(metric)
             fund_table.append(row)
@@ -45,7 +70,7 @@ def build_peer_comparison(
         result["fundamental_comparison"] = fund_table
 
         # Target ranking summary
-        target_ranks = rankings.get(target_sym, {})
+        target_ranks = rankings.get(target_full, {})
         if target_ranks:
             total_peers = len(peer_fundamentals)
             result["target_fundamental_ranking"] = {
@@ -57,7 +82,7 @@ def build_peer_comparison(
     if peer_technicals:
         tech_table = []
         for sym, data in peer_technicals.items():
-            row = {"symbol": sym}
+            row = {"symbol": sym, "exchange": data.get("exchange") or _exchange(sym)}
             for metric in technical_metrics:
                 row[metric] = data.get(metric)
             tech_table.append(row)

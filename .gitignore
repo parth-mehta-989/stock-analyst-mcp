@@ -9,3 +9,4 @@ build/
 dump.rdb
 .vscode/
 configurations.env
+PUBLISHING.md

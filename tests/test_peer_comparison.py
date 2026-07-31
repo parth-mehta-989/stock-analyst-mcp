@@ -90,6 +90,23 @@ class TestBuildPeerComparison:
         # INFY has None PE, should not crash ranking
         assert len(result["fundamental_comparison"]) == 2
 
-    def test_exchange_suffix_stripped(self, peer_fundamentals, peer_technicals):
+    def test_exchange_suffix_target_matching(self, peer_fundamentals, peer_technicals):
         result = build_peer_comparison("TCS.NS", peer_fundamentals, peer_technicals, ["pe"], [])
+        # Target key in dict is "TCS" but input is "TCS.NS"; should match by normalized ticker
         assert result["target"] == "TCS"
+
+    def test_exchange_column(self):
+        fund = {
+            "TCS.NS": {"pe": 30, "name": "TCS"},
+            "534064.BO": {"pe": 20, "name": "BSE Peer"},
+        }
+        tech = {
+            "TCS.NS": {"rsi": 55},
+            "534064.BO": {"rsi": 40},
+        }
+        result = build_peer_comparison("TCS.NS", fund, tech, ["pe"], ["rsi"])
+        symbols = {r["symbol"]: r["exchange"] for r in result["fundamental_comparison"]}
+        assert symbols["TCS.NS"] == "NSE"
+        assert symbols["534064.BO"] == "BSE"
+        tech_symbols = {r["symbol"]: r["exchange"] for r in result["technical_comparison"]}
+        assert tech_symbols["534064.BO"] == "BSE"
