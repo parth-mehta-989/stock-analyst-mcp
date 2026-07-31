@@ -1,46 +1,23 @@
-"""Wraps financial-analyst forecast_builder.py."""
+"""Run revenue forecast."""
 
-import logging
-import sys
 from typing import Any, Dict, List, Optional
 
-from stock_analyst.config import Settings
-
-logger = logging.getLogger(__name__)
-
-_builder_cls = None
+from stock_analyst.fa.forecast_builder import ForecastBuilder
 
 
-def _load_builder(config: Settings):
-    global _builder_cls
-    if _builder_cls is not None:
-        return _builder_cls
-
-    scripts_dir = config.fa_scripts_dir
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    try:
-        from forecast_builder import ForecastBuilder
-        _builder_cls = ForecastBuilder
-        return _builder_cls
-    except ImportError as e:
-        logger.error("Cannot import forecast_builder from %s: %s", scripts_dir, e)
-        raise
-
-
-def run_forecast(mapped_data: Dict[str, Any], config: Settings, scenarios: Optional[List[str]] = None) -> Dict[str, Any]:
+def run_forecast(mapped_data: Dict[str, Any], config=None, scenarios: Optional[List[str]] = None) -> Dict[str, Any]:
     """Run forecast and return compact summary."""
-    cls = _load_builder(config)
-    builder = cls(mapped_data)
+    if config and scenarios is None:
+        scenarios = config.forecast_scenarios
 
-    scenarios = scenarios or config.forecast_scenarios
+    scenarios = scenarios or ["base", "bull", "bear"]
+    builder = ForecastBuilder(mapped_data)
 
     try:
         results = builder.run_full_forecast(scenarios=scenarios)
     except Exception as e:
         return {"error": str(e)}
 
-    # Compact: trend + scenario comparison
     compact: Dict[str, Any] = {}
 
     trend = results.get("trend_analysis", {})

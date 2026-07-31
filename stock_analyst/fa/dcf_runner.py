@@ -1,38 +1,13 @@
-"""Wraps financial-analyst dcf_valuation.py."""
+"""Run DCF valuation."""
 
-import json
-import logging
-import sys
 from typing import Any, Dict
 
-from stock_analyst.config import Settings
-
-logger = logging.getLogger(__name__)
-
-_model_cls = None
+from stock_analyst.fa.dcf_valuation import DCFModel, safe_divide
 
 
-def _load_model(config: Settings):
-    global _model_cls
-    if _model_cls is not None:
-        return _model_cls
-
-    scripts_dir = config.fa_scripts_dir
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    try:
-        from dcf_valuation import DCFModel
-        _model_cls = DCFModel
-        return _model_cls
-    except ImportError as e:
-        logger.error("Cannot import dcf_valuation from %s: %s", scripts_dir, e)
-        raise
-
-
-def run_dcf(mapped_data: Dict[str, Any], config: Settings) -> Dict[str, Any]:
+def run_dcf(mapped_data: Dict[str, Any], config=None) -> Dict[str, Any]:
     """Run DCF valuation and return compact summary."""
-    cls = _load_model(config)
-    model = cls()
+    model = DCFModel()
     model.set_historical_financials(mapped_data["historical"])
     model.set_assumptions(mapped_data["assumptions"])
 
@@ -41,7 +16,6 @@ def run_dcf(mapped_data: Dict[str, Any], config: Settings) -> Dict[str, Any]:
     except (ValueError, ZeroDivisionError) as e:
         return {"error": str(e)}
 
-    # Compact summary
     return {
         "wacc": results.get("wacc"),
         "value_per_share": results.get("value_per_share"),

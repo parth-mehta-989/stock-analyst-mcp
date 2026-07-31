@@ -2,157 +2,169 @@
 
 import json
 import logging
-from typing import Optional
 
 from mcp.server import MCPServer
 
 from stock_analyst.config import get_settings
 
 logger = logging.getLogger(__name__)
-config = get_settings()
 
 mcp = MCPServer("stock-analyst")
 
 
+def _error(code: str, message: str) -> str:
+    return json.dumps({"error": {"code": code, "message": message}})
+
+
+def _ok(result, **kwargs) -> str:
+    return json.dumps(result, indent=2, default=str)
+
+
 @mcp.tool()
 def analyze_stock(symbol: str) -> str:
-    """Full stock analysis: fundamentals, technicals, peer comparison, DCF valuation, revenue forecast, and news.
+    """Retrieve full stock analysis: fundamentals, technicals, peer comparison, DCF valuation, revenue forecast, and news for an Indian NSE/BSE stock.
 
     Args:
         symbol: Stock ticker symbol (e.g., RELIANCE, TCS, INFY). Automatically appends .NS for NSE.
-
-    Returns:
-        str: JSON with computed metrics — ratios, signals, peer rankings, DCF summary, forecast.
     """
-    import stock_analyst
-    result = stock_analyst.analyze(symbol)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.analyze(symbol))
+    except Exception as e:
+        logger.exception("analyze_stock failed")
+        return _error("analysis_failed", str(e))
 
 
 @mcp.tool()
 def get_fundamentals(symbol: str) -> str:
-    """Financial ratios: profitability (ROE, ROA, margins), liquidity, leverage, efficiency, and valuation (PE, PB, EV/EBITDA).
+    """Retrieve financial ratios: profitability (ROE, ROA, margins), liquidity, leverage, efficiency, and valuation (PE, PB, EV/EBITDA) with benchmark interpretations.
 
     Args:
         symbol: Stock ticker symbol (e.g., RELIANCE, TCS).
-
-    Returns:
-        str: JSON with ratio values, formulas, and benchmark interpretations.
     """
-    import stock_analyst
-    result = stock_analyst.get_fundamentals(symbol)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_fundamentals(symbol))
+    except Exception as e:
+        logger.exception("get_fundamentals failed")
+        return _error("fundamentals_failed", str(e))
 
 
 @mcp.tool()
 def get_technicals(symbol: str, period: str = "1y") -> str:
-    """Technical signals: EMA trend, RSI (overbought/oversold), MACD crossovers, Bollinger Band position.
+    """Retrieve technical signals: EMA trend, RSI (overbought/oversold), MACD crossovers, Bollinger Band position, and overall signal.
 
     Args:
         symbol: Stock ticker symbol.
-        period: Historical period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max). Default: 1y.
-
-    Returns:
-        str: JSON with compact technical summary and overall signal.
+        period: Historical period — one of: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max. Default: 1y.
     """
-    import stock_analyst
-    result = stock_analyst.get_technicals(symbol, period=period)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_technicals(symbol, period=period))
+    except Exception as e:
+        logger.exception("get_technicals failed")
+        return _error("technicals_failed", str(e))
 
 
 @mcp.tool()
 def get_peer_comparison(symbol: str) -> str:
-    """Peer comparison: fundamental + technical metrics ranked among sector peers.
+    """Retrieve peer comparison: fundamental and technical metrics ranked among sector peers discovered from screener.in.
 
     Args:
         symbol: Stock ticker symbol.
-
-    Returns:
-        str: JSON with peer fundamental/technical tables and target rankings.
     """
-    import stock_analyst
-    result = stock_analyst.get_peer_comparison(symbol)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_peer_comparison(symbol))
+    except Exception as e:
+        logger.exception("get_peer_comparison failed")
+        return _error("peer_comparison_failed", str(e))
 
 
 @mcp.tool()
 def get_dcf_valuation(symbol: str) -> str:
-    """DCF valuation: WACC (India-adjusted), equity value per share, sensitivity range.
+    """Retrieve DCF valuation: WACC (India-adjusted defaults), equity value per share via perpetuity growth and exit multiple methods, with sensitivity range.
 
     Args:
         symbol: Stock ticker symbol.
-
-    Returns:
-        str: JSON with WACC, value per share (perpetuity + exit multiple), sensitivity min/max.
     """
-    import stock_analyst
-    result = stock_analyst.get_dcf_valuation(symbol)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_dcf_valuation(symbol))
+    except Exception as e:
+        logger.exception("get_dcf_valuation failed")
+        return _error("dcf_failed", str(e))
 
 
 @mcp.tool()
 def get_revenue_forecast(symbol: str) -> str:
-    """Revenue forecast: base/bull/bear scenarios with trend analysis.
+    """Retrieve revenue forecast with base, bull, and bear scenarios including trend analysis and growth rates.
 
     Args:
         symbol: Stock ticker symbol.
-
-    Returns:
-        str: JSON with trend direction, growth rate, and scenario comparison.
     """
-    import stock_analyst
-    result = stock_analyst.get_revenue_forecast(symbol)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_revenue_forecast(symbol))
+    except Exception as e:
+        logger.exception("get_revenue_forecast failed")
+        return _error("forecast_failed", str(e))
 
 
 @mcp.tool()
 def get_news(symbol: str) -> str:
-    """Recent news headlines (latest 5) and analyst recommendation summary.
+    """Retrieve recent news headlines (latest 5) and analyst recommendation summary (buy/hold/sell counts).
 
     Args:
         symbol: Stock ticker symbol.
-
-    Returns:
-        str: JSON with headlines and buy/hold/sell recommendation counts.
     """
-    import stock_analyst
-    result = stock_analyst.get_news(symbol)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_news(symbol))
+    except Exception as e:
+        logger.exception("get_news failed")
+        return _error("news_failed", str(e))
 
 
 @mcp.tool()
 def compare_stocks(symbols: str) -> str:
-    """Side-by-side comparison of multiple stocks.
+    """Compare multiple stocks side-by-side with full analysis for each.
 
     Args:
         symbols: Comma-separated stock ticker symbols (e.g., "RELIANCE,TCS,INFY").
-
-    Returns:
-        str: JSON with full analysis for each stock.
     """
-    import stock_analyst
-    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
-    result = stock_analyst.compare_stocks(symbol_list)
-    return json.dumps(result, indent=2, default=str)
+    try:
+        import stock_analyst
+        symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
+        if not symbol_list:
+            return _error("invalid_input", "Provide at least one symbol")
+        return _ok(stock_analyst.compare_stocks(symbol_list))
+    except Exception as e:
+        logger.exception("compare_stocks failed")
+        return _error("comparison_failed", str(e))
 
 
 @mcp.tool()
 def get_raw_data(symbol: str, data_type: str) -> str:
-    """Fetch cached raw financial data for deep dives.
+    """Fetch cached raw financial data for deep dives. Triggers a data fetch if not cached.
 
     Args:
         symbol: Stock ticker symbol.
-        data_type: Type of data — one of: info, financials, balance_sheet, cashflow, ohlcv
-
-    Returns:
-        str: JSON with raw financial statement data.
+        data_type: Type of data — one of: info, financials, balance_sheet, cashflow, ohlcv.
     """
-    import stock_analyst
-    result = stock_analyst.get_raw_data(symbol, data_type)
-    return json.dumps(result, indent=2, default=str)
+    valid_types = {"info", "financials", "balance_sheet", "cashflow", "ohlcv"}
+    if data_type not in valid_types:
+        return _error("invalid_input", f"data_type must be one of: {', '.join(sorted(valid_types))}")
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_raw_data(symbol, data_type))
+    except Exception as e:
+        logger.exception("get_raw_data failed")
+        return _error("raw_data_failed", str(e))
 
 
 def main():
+    config = get_settings()
     logging.basicConfig(level=getattr(logging, config.log_level, logging.INFO))
     transport = config.mcp_transport
     kwargs = {}

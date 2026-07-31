@@ -60,6 +60,10 @@ class TechnicalAnalyzer:
         return result
 
     def _build_summary(self, df: pd.DataFrame, symbol: str) -> Dict[str, Any]:
+        # Drop rows with NaN Close to avoid stale/weekend entries
+        df = df.dropna(subset=["Close"])
+        if df.empty:
+            return {"symbol": symbol, "error": "No valid price data"}
         latest = df.iloc[-1]
         price = float(latest["Close"])
 

@@ -1,12 +1,30 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "stock-analyst"
+name = "stock-analyst-mcp"
 version = "0.1.0"
-description = "Indian stock market analysis tool — MCP server + CLI"
+description = "MCP server for Indian stock market analysis — fundamentals, technicals, DCF, peer comparison"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+authors = [
+    { name = "Stock Analyst Contributors" },
+]
+keywords = ["mcp", "stocks", "india", "nse", "bse", "finance", "analysis", "dcf"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
 dependencies = [
     "yfinance>=0.2.36",
     "pandas>=2.0.0",
@@ -18,12 +36,16 @@ dependencies = [
     "redis>=5.0.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
-    "python-dotenv>=1.0.0",
 ]
 
 [project.scripts]
+stock-analyst-mcp = "stock_analyst.server:main"
 stock-analyst = "stock_analyst.cli:main"
-stock-analyst-server = "stock_analyst.server:main"
 
-[tool.setuptools.packages.find]
-include = ["stock_analyst*"]
+[project.urls]
+Homepage = "https://github.com/parth-mehta-989/stock-analyst-mcp"
+Repository = "https://github.com/parth-mehta-989/stock-analyst-mcp"
+Issues = "https://github.com/parth-mehta-989/stock-analyst-mcp/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["stock_analyst"]

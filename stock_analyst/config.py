@@ -26,7 +26,7 @@ def _csv_to_int_list(v: str) -> List[int]:
 
 class Settings(BaseSettings):
     # MCP Server
-    mcp_transport: str = "stdio"
+    mcp_transport: str = "streamable-http"
     mcp_port: int = 3001
 
     # Data Provider
@@ -60,7 +60,6 @@ class Settings(BaseSettings):
     ta_bollinger_period: int = 20
 
     # Financial Analysis
-    fa_scripts_dir: str = "~/.codeium/windsurf/skills/financial-analyst/scripts"
     fa_dcf_enabled: bool = True
     fa_dcf_projection_years: int = 5
     fa_dcf_terminal_growth: float = 0.025
@@ -99,7 +98,7 @@ class Settings(BaseSettings):
         "extra": "ignore",
     }
 
-    @field_validator("csv_cache_dir", "fa_scripts_dir")
+    @field_validator("csv_cache_dir")
     @classmethod
     def expand_paths(cls, v: str) -> str:
         return _expand_path(v)
