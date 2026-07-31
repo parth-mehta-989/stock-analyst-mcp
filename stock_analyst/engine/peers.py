@@ -1,11 +1,11 @@
-"""Peer discovery from screener.in + peer data fetching."""
+"""Peer discovery via yfinance Industry API + screener.in fallback."""
 
 import logging
 import time
 from typing import Any, Dict, List
 
-import pandas as pd
 import requests
+import yfinance as yf
 from bs4 import BeautifulSoup
 
 from stock_analyst.cache.base import Cache
@@ -15,6 +15,11 @@ from stock_analyst.engine.data_provider import DataProvider
 logger = logging.getLogger(__name__)
 
 
+def _strip_exchange(symbol: str) -> str:
+    """Remove .NS / .BO suffix and normalize."""
+    return symbol.upper().strip().replace(".NS", "").replace(".BO", "")
+
+
 class PeerAnalyzer:
     def __init__(self, provider: DataProvider, cache: Cache, config: Settings) -> None:
         self._provider = provider
@@ -22,30 +27,48 @@ class PeerAnalyzer:
         self._config = config
 
     def discover_peers(self, symbol: str) -> List[str]:
-        """Discover peer symbols from screener.in or yfinance fallback."""
+        """Discover peer symbols. Tries yfinance Industry API first, screener.in second."""
         cache_key = f"peers_list:{symbol}"
         cached = self._cache.get(cache_key)
         if cached:
             return cached
 
-        peers: List[str] = []
+        peers: List[str] = self._yfinance_industry(symbol)
 
-        if self._config.screener_enabled:
+        if not peers and self._config.screener_enabled:
             peers = self._scrape_screener(symbol)
 
-        if not peers:
-            peers = self._yfinance_fallback(symbol)
-
         # Remove the target stock from peers
-        raw_sym = symbol.upper().strip().replace(".NS", "").replace(".BO", "")
-        peers = [p for p in peers if p.upper() != raw_sym][:self._config.peers_max_count]
+        raw_sym = _strip_exchange(symbol)
+        peers = [p for p in peers if _strip_exchange(p) != raw_sym][:self._config.peers_max_count]
 
         self._cache.set(cache_key, peers)
         return peers
 
+    def _yfinance_industry(self, symbol: str) -> List[str]:
+        """Discover peers via yfinance Industry top_companies (region=IN)."""
+        try:
+            info = self._provider.get_info(symbol)
+            industry_key = info.get("industryKey", "")
+            if not industry_key:
+                logger.debug("No industryKey for %s", symbol)
+                return []
+
+            industry = yf.Industry(industry_key, region="IN")
+            top = industry.top_companies
+            if top is None or top.empty:
+                logger.debug("No top_companies for industry %s", industry_key)
+                return []
+
+            # index is symbol (e.g. TCS.NS), extract raw ticker
+            return [_strip_exchange(sym) for sym in top.index.tolist()]
+        except Exception as e:
+            logger.debug("yfinance Industry peer discovery failed: %s", e)
+            return []
+
     def _scrape_screener(self, symbol: str) -> List[str]:
-        """Scrape screener.in for peer list. Best-effort."""
-        raw_sym = symbol.upper().strip().replace(".NS", "").replace(".BO", "")
+        """Scrape screener.in for peer list. Best-effort fallback."""
+        raw_sym = _strip_exchange(symbol)
         url = f"{self._config.screener_base_url}/{raw_sym}/"
         try:
             resp = requests.get(
@@ -62,17 +85,27 @@ class PeerAnalyzer:
             if not peer_section:
                 return []
 
+            # Try table first (legacy DOM)
             table = peer_section.find("table", {"class": "data-table"})
-            if not table:
-                return []
+            if table:
+                peers = []
+                for row in table.find_all("tr")[1:]:
+                    link = row.find("a")
+                    if link and link.get("href"):
+                        parts = link["href"].strip("/").split("/")
+                        if len(parts) >= 2:
+                            peers.append(parts[1])
+                if peers:
+                    time.sleep(self._config.screener_delay)
+                    return peers
 
+            # Fallback: extract company links from peer section
             peers = []
-            for row in table.find_all("tr")[1:]:  # skip header
-                link = row.find("a")
-                if link and link.get("href"):
-                    # href like /company/TCS/consolidated/
-                    parts = link["href"].strip("/").split("/")
-                    if len(parts) >= 2:
+            for link in peer_section.find_all("a", href=True):
+                href = link["href"]
+                if href.startswith("/company/") and not href.startswith("/company/CN") and not href.startswith("/company/1"):
+                    parts = href.strip("/").split("/")
+                    if len(parts) >= 2 and parts[1].isalpha():
                         peers.append(parts[1])
 
             time.sleep(self._config.screener_delay)
@@ -80,20 +113,6 @@ class PeerAnalyzer:
 
         except Exception as e:
             logger.debug("Screener.in scraping failed: %s", e)
-            return []
-
-    def _yfinance_fallback(self, symbol: str) -> List[str]:
-        """Limited fallback: use yfinance sector/industry to find peers."""
-        try:
-            info = self._provider.get_info(symbol)
-            industry = info.get("industry", "")
-            if not industry:
-                return []
-            # yfinance doesn't provide sector peers directly.
-            # Return empty — caller handles gracefully.
-            logger.debug("No screener peers for %s, industry=%s", symbol, industry)
-            return []
-        except Exception:
             return []
 
     def get_peer_fundamentals(self, symbol: str, peers: List[str]) -> Dict[str, Any]:
@@ -109,7 +128,7 @@ class PeerAnalyzer:
         for sym in all_symbols:
             try:
                 info = self._provider.get_info(sym)
-                results[sym.upper().replace(".NS", "").replace(".BO", "")] = {
+                results[_strip_exchange(sym)] = {
                     "pe": info.get("trailingPE"),
                     "pb": info.get("priceToBook"),
                     "roe": info.get("returnOnEquity"),
@@ -146,7 +165,7 @@ class PeerAnalyzer:
         for sym in all_symbols:
             try:
                 tech = ta_analyzer.analyze(sym)
-                clean_sym = sym.upper().replace(".NS", "").replace(".BO", "")
+                clean_sym = _strip_exchange(sym)
                 results[clean_sym] = {
                     k: tech.get(k)
                     for k in ["current_price", "rsi", "rsi_signal", "ema_trend",

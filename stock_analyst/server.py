@@ -68,7 +68,7 @@ def get_technicals(symbol: str, period: str = "1y") -> str:
 
 @mcp.tool()
 def get_peer_comparison(symbol: str) -> str:
-    """Retrieve peer comparison: fundamental and technical metrics ranked among sector peers discovered from screener.in.
+    """Retrieve peer comparison: fundamental and technical metrics ranked among industry peers discovered via yfinance Industry API.
 
     Args:
         symbol: Stock ticker symbol.

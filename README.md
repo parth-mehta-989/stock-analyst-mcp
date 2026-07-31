@@ -91,7 +91,7 @@ All settings configurable via environment variables with `SA_` prefix. Defaults 
 | `SA_CACHE_BACKEND` | `redis` | `redis`, `csv`, or `none` |
 | `SA_REDIS_URL` | `redis://localhost:6379/0` | Redis connection URL |
 | `SA_CACHE_TTL` | `3600` | Cache TTL in seconds |
-| `SA_SCREENER_ENABLED` | `true` | Scrape screener.in for peers |
+| `SA_SCREENER_ENABLED` | `true` | Use screener.in as fallback for peers |
 | `SA_FA_DCF_ENABLED` | `true` | Run DCF valuation |
 | `SA_FA_WACC_RISK_FREE_RATE` | `0.07` | India 10Y govt bond yield |
 | `SA_PEERS_MAX_COUNT` | `10` | Max peers to compare |
@@ -112,8 +112,8 @@ signals = get_technicals("INFY", period="6mo")
 
 ## Data Sources
 
-- **yfinance** — OHLCV, financials, balance sheet, cashflow, info
-- **screener.in** — peer discovery (best-effort, graceful fallback)
+- **yfinance** — OHLCV, financials, balance sheet, cashflow, info, peer discovery via Industry API
+- **screener.in** — peer discovery fallback (best-effort, graceful degradation)
 - **India-adjusted defaults** — risk-free rate 7%, cost of debt 9%, tax 25%
 
 ## License
