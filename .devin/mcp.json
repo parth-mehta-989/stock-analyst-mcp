@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "stock-analyst": {
+      "command": "python",
+      "args": ["-m", "stock_analyst.server"],
+      "cwd": "/Users/4911362/workspace/personal/stock_analysis",
+      "env": {}
+    }
+  }
+}

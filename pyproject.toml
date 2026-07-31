@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "stock-analyst"
+version = "0.1.0"
+description = "Indian stock market analysis tool — MCP server + CLI"
+requires-python = ">=3.11"
+dependencies = [
+    "yfinance>=0.2.36",
+    "pandas>=2.0.0",
+    "pandas-ta>=0.3.14",
+    "beautifulsoup4>=4.12.0",
+    "requests>=2.31.0",
+    "lxml>=5.0.0",
+    "mcp>=1.0.0",
+    "redis>=5.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+stock-analyst = "stock_analyst.cli:main"
+stock-analyst-server = "stock_analyst.server:main"
+
+[tool.setuptools.packages.find]
+include = ["stock_analyst*"]
