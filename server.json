@@ -1,14 +1,14 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "parth-mehta-989/stock-analyst-mcp",
+  "name": "io.github.parth-mehta-989/stock-analyst-mcp",
   "title": "Indian Stock Market Analyst",
   "description": "Indian stock market analysis: fundamentals, technicals, DCF, peer comparison, forecast for NSE/BSE.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "stock-analyst-mcp",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "transport": {
         "type": "stdio"
       }

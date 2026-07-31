@@ -2,7 +2,7 @@
 
 MCP server for Indian stock market analysis — fundamentals, technicals, DCF valuation, peer comparison, and more.
 
-<!-- mcp-name: stock-analyst-mcp -->
+<!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
 ## Install
 
