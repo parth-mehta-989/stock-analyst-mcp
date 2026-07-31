@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "stock-analyst-mcp",
+  "name": "parth-mehta-989/stock-analyst-mcp",
   "title": "Indian Stock Market Analyst",
-  "description": "MCP server for Indian stock market analysis — fundamentals, technicals, DCF valuation, peer comparison, revenue forecast, and news for NSE/BSE stocks.",
+  "description": "Indian stock market analysis: fundamentals, technicals, DCF, peer comparison, forecast for NSE/BSE.",
   "version": "0.1.0",
   "packages": [
     {
