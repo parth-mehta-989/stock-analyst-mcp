@@ -113,6 +113,135 @@ def get_raw_data(symbol: str, data_type: str) -> Dict[str, Any]:
     return data or {"error": f"No cached data for {symbol}:{data_type}"}
 
 
+def get_config() -> Dict[str, Any]:
+    """Get current configuration settings."""
+    _init()
+    return {
+        "data_provider": _config.data_provider,
+        "default_exchange": _config.default_exchange,
+        "default_period": _config.default_period,
+        "default_interval": _config.default_interval,
+        "cache_backend": _config.cache_backend,
+        "cache_ttl": _config.cache_ttl,
+        "technical_analysis": {
+            "ema_periods": _config.ta_ema_periods,
+            "rsi_period": _config.ta_rsi_period,
+            "macd_params": _config.ta_macd_params,
+            "bollinger_enabled": _config.ta_bollinger_enabled,
+            "bollinger_period": _config.ta_bollinger_period,
+        },
+        "financial_analysis": {
+            "dcf_enabled": _config.fa_dcf_enabled,
+            "dcf_projection_years": _config.fa_dcf_projection_years,
+            "dcf_terminal_growth": _config.fa_dcf_terminal_growth,
+            "dcf_exit_multiple": _config.fa_dcf_exit_multiple,
+            "wacc_risk_free_rate": _config.fa_wacc_risk_free_rate,
+            "wacc_equity_risk_premium": _config.fa_wacc_equity_risk_premium,
+            "wacc_cost_of_debt": _config.fa_wacc_cost_of_debt,
+            "wacc_tax_rate": _config.fa_wacc_tax_rate,
+            "wacc_debt_weight": _config.fa_wacc_debt_weight,
+            "wacc_equity_weight": _config.fa_wacc_equity_weight,
+            "forecast_scenarios": _config.fa_forecast_scenarios,
+        },
+        "peer_comparison": {
+            "max_count": _config.peers_max_count,
+            "fundamental_comparison": _config.peers_fundamental_comparison,
+            "technical_comparison": _config.peers_technical_comparison,
+            "fundamental_metrics": _config.peers_fundamental_metrics,
+            "technical_metrics": _config.peers_technical_metrics,
+        },
+        "output": {
+            "format": _config.output_format,
+            "include_raw": _config.output_include_raw,
+            "pretty": _config.output_pretty,
+        },
+    }
+
+
+def set_config(key: str, value: str) -> Dict[str, Any]:
+    """Update a configuration setting dynamically.
+    
+    Args:
+        key: Config key (e.g., 'default_period', 'ta_rsi_period')
+        value: New value as string
+        
+    Returns:
+        Dict with confirmation, new value, and affected tools
+    """
+    _init()
+    
+    # Type conversions
+    type_map = {
+        "default_period": str,
+        "default_interval": str,
+        "ta_rsi_period": int,
+        "ta_ema_periods": str,
+        "ta_macd_params": str,
+        "ta_bollinger_enabled": lambda x: x.lower() in ("true", "1", "yes"),
+        "ta_bollinger_period": int,
+        "fa_dcf_enabled": lambda x: x.lower() in ("true", "1", "yes"),
+        "fa_dcf_projection_years": int,
+        "fa_dcf_terminal_growth": float,
+        "fa_dcf_exit_multiple": float,
+        "fa_wacc_risk_free_rate": float,
+        "fa_wacc_equity_risk_premium": float,
+        "fa_wacc_cost_of_debt": float,
+        "fa_wacc_tax_rate": float,
+        "fa_wacc_debt_weight": float,
+        "fa_wacc_equity_weight": float,
+        "fa_forecast_scenarios": str,
+        "peers_max_count": int,
+        "peers_fundamental_comparison": lambda x: x.lower() in ("true", "1", "yes"),
+        "peers_technical_comparison": lambda x: x.lower() in ("true", "1", "yes"),
+        "peers_fundamental_metrics": str,
+        "peers_technical_metrics": str,
+        "cache_ttl": int,
+        "output_format": str,
+        "output_include_raw": lambda x: x.lower() in ("true", "1", "yes"),
+        "output_pretty": lambda x: x.lower() in ("true", "1", "yes"),
+    }
+    
+    if key not in type_map:
+        valid_keys = sorted(type_map.keys())
+        return {
+            "error": f"Unknown config key: {key}",
+            "valid_keys": valid_keys,
+        }
+    
+    try:
+        converter = type_map[key]
+        converted_value = converter(value)
+        setattr(_config, key, converted_value)
+        
+        # Determine affected tools
+        affected_tools = []
+        if key.startswith("ta_"):
+            affected_tools.append("get_technicals")
+            affected_tools.append("analyze_stock")
+        if key.startswith("fa_"):
+            affected_tools.extend(["get_dcf_valuation", "get_revenue_forecast", "analyze_stock"])
+        if key.startswith("peers_"):
+            affected_tools.extend(["get_peer_comparison", "analyze_stock"])
+        if key in ("default_period", "default_interval", "cache_ttl"):
+            affected_tools.append("all_tools")
+        
+        return {
+            "status": "success",
+            "key": key,
+            "old_value": getattr(_config, key),
+            "new_value": converted_value,
+            "affected_tools": list(set(affected_tools)),
+            "message": f"Config updated: {key} = {converted_value}",
+        }
+    except (ValueError, TypeError) as e:
+        return {
+            "error": f"Failed to convert value: {str(e)}",
+            "key": key,
+            "value": value,
+            "expected_type": str(type_map[key]),
+        }
+
+
 def _build_report(symbol: str, include_peers: bool = True) -> StockReport:
     fa = FundamentalAnalyzer(_provider, _cache, _config)
     data = fa.fetch_all(symbol)

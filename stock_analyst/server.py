@@ -163,6 +163,51 @@ def get_raw_data(symbol: str, data_type: str) -> str:
         return _error("raw_data_failed", str(e))
 
 
+@mcp.tool()
+def get_config() -> str:
+    """Retrieve current configuration settings for all analysis tools.
+
+    Returns current values for technical analysis periods, DCF parameters, peer comparison settings, etc.
+    Use this to understand available options before calling set_config.
+    """
+    try:
+        import stock_analyst
+        config = stock_analyst.get_config()
+        return _ok(config)
+    except Exception as e:
+        logger.exception("get_config failed")
+        return _error("config_failed", str(e))
+
+
+@mcp.tool()
+def set_config(key: str, value: str) -> str:
+    """Update a configuration setting for analysis tools.
+
+    Args:
+        key: Configuration key (e.g., 'default_period', 'ta_rsi_period', 'fa_dcf_projection_years').
+        value: New value as string (will be converted to appropriate type).
+
+    Common keys:
+        - default_period: Historical period for analysis (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max). Default: 1y
+        - ta_rsi_period: RSI calculation period. Default: 14
+        - ta_ema_periods: Comma-separated EMA periods (e.g., '20,50,200'). Default: 20,50,200
+        - fa_dcf_projection_years: DCF projection years. Default: 5
+        - fa_dcf_terminal_growth: Terminal growth rate (0.025 = 2.5%). Default: 0.025
+        - fa_dcf_exit_multiple: Exit multiple for DCF. Default: 12.0
+        - peers_max_count: Max peers for comparison. Default: 10
+        - cache_ttl: Cache TTL in seconds. Default: 3600
+
+    Returns confirmation with new value and affected tools.
+    """
+    try:
+        import stock_analyst
+        result = stock_analyst.set_config(key, value)
+        return _ok(result)
+    except Exception as e:
+        logger.exception("set_config failed")
+        return _error("config_failed", str(e))
+
+
 def main():
     config = get_settings()
     logging.basicConfig(level=getattr(logging, config.log_level, logging.INFO))

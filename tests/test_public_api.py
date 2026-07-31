@@ -121,3 +121,59 @@ class TestGetRawData:
         result = stock_analyst.get_raw_data("TCS", "info")
         # NullCache returns None, so we get "error" or the fetched data
         assert isinstance(result, dict)
+
+
+class TestGetConfig:
+    def test_returns_dict(self, setup_mocks):
+        result = stock_analyst.get_config()
+        assert isinstance(result, dict)
+        assert "data_provider" in result
+        assert "technical_analysis" in result
+        assert "financial_analysis" in result
+        assert "peer_comparison" in result
+
+    def test_includes_all_settings(self, setup_mocks):
+        result = stock_analyst.get_config()
+        assert result["default_period"] == "1y"
+        assert result["technical_analysis"]["rsi_period"] == 14
+        assert result["financial_analysis"]["dcf_projection_years"] == 5
+
+
+class TestSetConfig:
+    def test_update_default_period(self, setup_mocks):
+        result = stock_analyst.set_config("default_period", "1d")
+        assert result["status"] == "success"
+        assert result["key"] == "default_period"
+        assert result["new_value"] == "1d"
+        assert "all_tools" in result["affected_tools"]
+
+    def test_update_rsi_period(self, setup_mocks):
+        result = stock_analyst.set_config("ta_rsi_period", "21")
+        assert result["status"] == "success"
+        assert result["new_value"] == 21
+        assert "get_technicals" in result["affected_tools"]
+
+    def test_update_dcf_projection_years(self, setup_mocks):
+        result = stock_analyst.set_config("fa_dcf_projection_years", "10")
+        assert result["status"] == "success"
+        assert result["new_value"] == 10
+        assert "get_dcf_valuation" in result["affected_tools"]
+
+    def test_update_float_value(self, setup_mocks):
+        result = stock_analyst.set_config("fa_dcf_terminal_growth", "0.035")
+        assert result["status"] == "success"
+        assert result["new_value"] == 0.035
+
+    def test_update_boolean_value(self, setup_mocks):
+        result = stock_analyst.set_config("ta_bollinger_enabled", "false")
+        assert result["status"] == "success"
+        assert result["new_value"] is False
+
+    def test_invalid_key(self, setup_mocks):
+        result = stock_analyst.set_config("invalid_key", "value")
+        assert "error" in result
+        assert "valid_keys" in result
+
+    def test_invalid_type_conversion(self, setup_mocks):
+        result = stock_analyst.set_config("ta_rsi_period", "not_a_number")
+        assert "error" in result
