@@ -1,9 +1,10 @@
 """Stock Analyst — Indian stock market analysis tool."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from stock_analyst.analysis.formatter import to_json, to_markdown
+from stock_analyst.analysis.formatter import to_json as to_json
+from stock_analyst.analysis.formatter import to_markdown as to_markdown
 from stock_analyst.analysis.peer_comparison import build_peer_comparison
 from stock_analyst.analysis.report import StockReport
 from stock_analyst.cache import get_cache
@@ -19,7 +20,7 @@ from stock_analyst.fa.ratio_runner import run_ratios
 
 logger = logging.getLogger(__name__)
 
-_config: Optional[Settings] = None
+_config: Settings | None = None
 _cache = None
 _provider = None
 
@@ -32,14 +33,14 @@ def _init():
         _provider = get_provider(_config)
 
 
-def analyze(symbol: str, include_peers: bool = True) -> Dict[str, Any]:
+def analyze(symbol: str, include_peers: bool = True) -> dict[str, Any]:
     """Full analysis: fundamentals + technicals + peers + DCF + forecast + news."""
     _init()
     report = _build_report(symbol, include_peers=include_peers)
     return report.to_dict()
 
 
-def get_fundamentals(symbol: str) -> Dict[str, Any]:
+def get_fundamentals(symbol: str) -> dict[str, Any]:
     """Financial ratios only."""
     _init()
     fa = FundamentalAnalyzer(_provider, _cache, _config)
@@ -47,14 +48,14 @@ def get_fundamentals(symbol: str) -> Dict[str, Any]:
     return run_ratios(data["ratio_input"], _config)
 
 
-def get_technicals(symbol: str, period: str = "") -> Dict[str, Any]:
+def get_technicals(symbol: str, period: str = "") -> dict[str, Any]:
     """Technical signals only."""
     _init()
     ta = TechnicalAnalyzer(_provider, _cache, _config)
     return ta.analyze(symbol, period=period)
 
 
-def get_peer_comparison(symbol: str) -> Dict[str, Any]:
+def get_peer_comparison(symbol: str) -> dict[str, Any]:
     """Peer comparison tables."""
     _init()
     pa = PeerAnalyzer(_provider, _cache, _config)
@@ -68,7 +69,7 @@ def get_peer_comparison(symbol: str) -> Dict[str, Any]:
     )
 
 
-def get_dcf_valuation(symbol: str) -> Dict[str, Any]:
+def get_dcf_valuation(symbol: str) -> dict[str, Any]:
     """DCF valuation summary."""
     _init()
     fa = FundamentalAnalyzer(_provider, _cache, _config)
@@ -76,7 +77,7 @@ def get_dcf_valuation(symbol: str) -> Dict[str, Any]:
     return run_dcf(data["dcf_input"], _config)
 
 
-def get_revenue_forecast(symbol: str) -> Dict[str, Any]:
+def get_revenue_forecast(symbol: str) -> dict[str, Any]:
     """Revenue forecast: base/bull/bear scenarios."""
     _init()
     fa = FundamentalAnalyzer(_provider, _cache, _config)
@@ -84,14 +85,14 @@ def get_revenue_forecast(symbol: str) -> Dict[str, Any]:
     return run_forecast(data["forecast_input"], _config)
 
 
-def get_news(symbol: str) -> Dict[str, Any]:
+def get_news(symbol: str) -> dict[str, Any]:
     """News + analyst recommendations."""
     _init()
     na = NewsAnalyzer(_provider, _cache, _config)
     return na.analyze(symbol)
 
 
-def compare_stocks(symbols: List[str]) -> Dict[str, Any]:
+def compare_stocks(symbols: list[str]) -> dict[str, Any]:
     """Side-by-side comparison of multiple stocks."""
     _init()
     results = {}
@@ -100,7 +101,7 @@ def compare_stocks(symbols: List[str]) -> Dict[str, Any]:
     return results
 
 
-def get_raw_data(symbol: str, data_type: str) -> Dict[str, Any]:
+def get_raw_data(symbol: str, data_type: str) -> dict[str, Any]:
     """Fetch cached raw data."""
     _init()
     key = f"raw:{symbol.upper().strip()}:{data_type}"
@@ -113,7 +114,7 @@ def get_raw_data(symbol: str, data_type: str) -> Dict[str, Any]:
     return data or {"error": f"No cached data for {symbol}:{data_type}"}
 
 
-def get_config() -> Dict[str, Any]:
+def get_config() -> dict[str, Any]:
     """Get current configuration settings."""
     _init()
     return {
@@ -158,7 +159,7 @@ def get_config() -> Dict[str, Any]:
     }
 
 
-def set_config(key: str, value: str) -> Dict[str, Any]:
+def set_config(key: str, value: str) -> dict[str, Any]:
     """Update a configuration setting dynamically.
     
     Args:
@@ -166,7 +167,7 @@ def set_config(key: str, value: str) -> Dict[str, Any]:
         value: New value as string
         
     Returns:
-        Dict with confirmation, new value, and affected tools
+        dict with confirmation, new value, and affected tools
     """
     _init()
     
@@ -235,7 +236,7 @@ def set_config(key: str, value: str) -> Dict[str, Any]:
         }
     except (ValueError, TypeError) as e:
         return {
-            "error": f"Failed to convert value: {str(e)}",
+            "error": f"Failed to convert value: {e!s}",
             "key": key,
             "value": value,
             "expected_type": str(type_map[key]),
@@ -259,7 +260,7 @@ def _build_report(symbol: str, include_peers: bool = True) -> StockReport:
     # Fundamentals
     try:
         report.fundamentals = run_ratios(data["ratio_input"], _config)
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         logger.error("Ratio calculation failed: %s", e)
 
     # Technicals
@@ -279,20 +280,20 @@ def _build_report(symbol: str, include_peers: bool = True) -> StockReport:
                     _config.peer_fundamental_metrics_list,
                     _config.peer_technical_metrics_list,
                 )
-        except Exception as e:
+        except (ValueError, KeyError, RuntimeError) as e:
             logger.error("Peer comparison failed: %s", e)
 
     # DCF
     if _config.fa_dcf_enabled:
         try:
             report.dcf_valuation = run_dcf(data["dcf_input"], _config)
-        except Exception as e:
+        except (ValueError, KeyError, RuntimeError) as e:
             logger.error("DCF failed: %s", e)
 
     # Forecast
     try:
         report.forecast = run_forecast(data["forecast_input"], _config)
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         logger.error("Forecast failed: %s", e)
 
     # News

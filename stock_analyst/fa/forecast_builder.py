@@ -9,7 +9,7 @@ Originally from financial-analyst skill. Inlined for distribution.
 """
 
 from statistics import mean
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
@@ -20,8 +20,8 @@ def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> f
 
 
 def simple_linear_regression(
-    x_values: List[float], y_values: List[float]
-) -> Tuple[float, float, float]:
+    x_values: list[float], y_values: list[float]
+) -> tuple[float, float, float]:
     """Simple linear regression. Returns (slope, intercept, r_squared)."""
     n = len(x_values)
     if n < 2 or n != len(y_values):
@@ -44,16 +44,16 @@ def simple_linear_regression(
 class ForecastBuilder:
     """Driver-based revenue forecasting with scenario modeling."""
 
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         """Initialize the forecast builder."""
-        self.historical: List[Dict[str, Any]] = data.get("historical_periods", [])
-        self.drivers: Dict[str, Any] = data.get("drivers", {})
-        self.assumptions: Dict[str, Any] = data.get("assumptions", {})
-        self.cash_flow_inputs: Dict[str, Any] = data.get("cash_flow_inputs", {})
-        self.scenarios_config: Dict[str, Any] = data.get("scenarios", {})
+        self.historical: list[dict[str, Any]] = data.get("historical_periods", [])
+        self.drivers: dict[str, Any] = data.get("drivers", {})
+        self.assumptions: dict[str, Any] = data.get("assumptions", {})
+        self.cash_flow_inputs: dict[str, Any] = data.get("cash_flow_inputs", {})
+        self.scenarios_config: dict[str, Any] = data.get("scenarios", {})
         self.forecast_periods: int = data.get("forecast_periods", 12)
 
-    def analyze_trends(self) -> Dict[str, Any]:
+    def analyze_trends(self) -> dict[str, Any]:
         """Analyze historical trends using linear regression."""
         if not self.historical:
             return {"error": "No historical data available"}
@@ -74,7 +74,7 @@ class ForecastBuilder:
 
         avg_growth = mean(growth_rates) if growth_rates else 0.0
 
-        seasonality_index: List[float] = []
+        seasonality_index: list[float] = []
         if len(revenues) >= 4:
             overall_avg = mean(revenues)
             if overall_avg > 0:
@@ -95,7 +95,7 @@ class ForecastBuilder:
 
     def build_driver_based_forecast(
         self, scenario: str = "base"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a driver-based revenue forecast."""
         scenario_adjustments = self.scenarios_config.get(scenario, {})
         growth_adjustment = scenario_adjustments.get("growth_adjustment", 0.0)
@@ -117,7 +117,7 @@ class ForecastBuilder:
         cogs_pct = 1.0 - adjusted_margin
         opex_pct = self.assumptions.get("opex_pct_revenue", 0.25)
 
-        forecast_periods: List[Dict[str, Any]] = []
+        forecast_periods: list[dict[str, Any]] = []
         current_revenue = base_revenue
 
         has_unit_drivers = bool(unit_drivers) and bool(price_drivers)
@@ -188,7 +188,7 @@ class ForecastBuilder:
             ),
         }
 
-    def build_rolling_cash_flow(self, weeks: int = 13) -> Dict[str, Any]:
+    def build_rolling_cash_flow(self, weeks: int = 13) -> dict[str, Any]:
         """Build a 13-week rolling cash flow projection."""
         cfi = self.cash_flow_inputs
 
@@ -203,11 +203,11 @@ class ForecastBuilder:
         weekly_other = cfi.get("weekly_other", 0)
         total_weekly_expenses = weekly_payroll + weekly_rent + weekly_operating + weekly_other
 
-        one_time_items: List[Dict[str, Any]] = cfi.get("one_time_items", [])
+        one_time_items: list[dict[str, Any]] = cfi.get("one_time_items", [])
 
-        weekly_projections: List[Dict[str, Any]] = []
+        weekly_projections: list[dict[str, Any]] = []
         running_balance = opening_balance
-        revenue_pipeline: List[float] = [0.0] * collection_lag_weeks
+        revenue_pipeline: list[float] = [0.0] * collection_lag_weeks
 
         for week in range(1, weeks + 1):
             revenue_pipeline.append(weekly_revenue)
@@ -215,7 +215,7 @@ class ForecastBuilder:
 
             one_time_inflows = 0.0
             one_time_outflows = 0.0
-            one_time_labels: List[str] = []
+            one_time_labels: list[str] = []
             for item in one_time_items:
                 if item.get("week") == week:
                     amount = item.get("amount", 0)
@@ -273,17 +273,17 @@ class ForecastBuilder:
         }
 
     def build_scenario_comparison(
-        self, scenarios: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, scenarios: list[str] | None = None
+    ) -> dict[str, Any]:
         """Build and compare multiple scenarios."""
         if scenarios is None:
             scenarios = ["base", "bull", "bear"]
 
-        scenario_results: Dict[str, Any] = {}
+        scenario_results: dict[str, Any] = {}
         for scenario in scenarios:
             scenario_results[scenario] = self.build_driver_based_forecast(scenario)
 
-        comparison: List[Dict[str, Any]] = []
+        comparison: list[dict[str, Any]] = []
         for scenario in scenarios:
             result = scenario_results[scenario]
             comparison.append({
@@ -301,8 +301,8 @@ class ForecastBuilder:
         }
 
     def run_full_forecast(
-        self, scenarios: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, scenarios: list[str] | None = None
+    ) -> dict[str, Any]:
         """Run the complete forecast analysis."""
         trends = self.analyze_trends()
         scenario_comparison = self.build_scenario_comparison(scenarios)

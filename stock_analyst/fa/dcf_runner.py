@@ -1,11 +1,11 @@
 """Run DCF valuation."""
 
-from typing import Any, Dict
+from typing import Any
 
-from stock_analyst.fa.dcf_valuation import DCFModel, safe_divide
+from stock_analyst.fa.dcf_valuation import DCFModel
 
 
-def run_dcf(mapped_data: Dict[str, Any], config=None) -> Dict[str, Any]:
+def run_dcf(mapped_data: dict[str, Any], config=None) -> dict[str, Any]:
     """Run DCF valuation and return compact summary."""
     model = DCFModel()
     model.set_historical_financials(mapped_data["historical"])
@@ -25,7 +25,7 @@ def run_dcf(mapped_data: Dict[str, Any], config=None) -> Dict[str, Any]:
     }
 
 
-def _extract_sensitivity_range(results: Dict[str, Any]) -> Dict[str, Any]:
+def _extract_sensitivity_range(results: dict[str, Any]) -> dict[str, Any]:
     """Extract min/max share price from sensitivity table."""
     sa = results.get("sensitivity_analysis", {})
     table = sa.get("share_price_table", [])
