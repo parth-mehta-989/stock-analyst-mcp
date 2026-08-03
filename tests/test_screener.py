@@ -74,13 +74,13 @@ class TestStockScreener:
     @patch("stock_analyst.engine.screener.yf.screen")
     def test_yfinance_screen_empty(self, mock_screen, screener):
         mock_screen.return_value = {"quotes": []}
-        result = screener._yfinance_screen({}, "market_cap", False, 50)
+        result = screener._yfinance_screen({}, "in", "market_cap", False, 50)
         assert result["count"] == 0
 
     @patch("stock_analyst.engine.screener.yf.screen")
     def test_yfinance_screen_exception(self, mock_screen, screener):
         mock_screen.side_effect = Exception("API error")
-        result = screener._yfinance_screen({}, "market_cap", False, 50)
+        result = screener._yfinance_screen({}, "in", "market_cap", False, 50)
         assert result["count"] == 0
 
     @patch("stock_analyst.engine.screener.requests.get")

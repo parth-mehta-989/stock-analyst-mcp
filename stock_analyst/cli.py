@@ -13,14 +13,16 @@ def main():
         prog="stock_analyst",
         description="Indian Stock Market Analysis Tool",
     )
-    parser.add_argument("--symbol", "-s", help="Stock ticker symbol (e.g., RELIANCE)")
+    parser.add_argument("--symbol", "-s", help="Stock ticker symbol (e.g., RELIANCE, AAPL)")
     parser.add_argument("--symbols", help="Comma-separated symbols for comparison")
+    parser.add_argument("--region", default="in", help="Region code (us, gb, de, jp, in, etc.)")
     parser.add_argument(
         "--analysis", "-a",
-        choices=["full", "fundamentals", "technicals", "peers", "dcf", "forecast", "news", "market-mood"],
+        choices=["full", "fundamentals", "technicals", "peers", "dcf", "forecast", "news", "market-mood", "asset"],
         default="full",
         help="Analysis type (default: full)",
     )
+    parser.add_argument("--asset-type", default="stock", help="Asset type for --analysis asset (stock, etf, index, commodity, crypto, currency)")
     parser.add_argument("--format", "-f", choices=["json", "markdown"], default=None, help="Output format")
     parser.add_argument("--raw", help="Fetch raw data type: info|financials|balance_sheet|cashflow|ohlcv")
     parser.add_argument("--period", default="", help="Historical period for technicals")
@@ -41,6 +43,11 @@ def main():
     parser.add_argument("--dividend-yield-min", type=float, help="Min dividend yield (decimal)")
     parser.add_argument("--sort-by", default="market_cap", help="Sort screener results by field")
     parser.add_argument("--limit", type=int, default=None, help="Max results for screener")
+
+    # Search arguments
+    parser.add_argument("--search", help="Search for tickers by name or symbol")
+    parser.add_argument("--search-type", default="stock", help="Search type (stock, etf, index, etc.)")
+    parser.add_argument("--search-limit", type=int, default=10, help="Max search results")
 
     args = parser.parse_args()
 
@@ -63,9 +70,13 @@ def main():
 
     result = None
 
+    # Search (no symbol needed)
+    if args.search:
+        result = stock_analyst.search_tickers(args.search, instrument_type=args.search_type, 
+                                             region=args.region, limit=args.search_limit)
     # Market mood (no symbol needed)
-    if args.analysis == "market-mood":
-        result = stock_analyst.get_market_mood()
+    elif args.analysis == "market-mood":
+        result = stock_analyst.get_market_mood(region=args.region)
     # Screener (no symbol needed)
     elif args.screen:
         filters = {}
@@ -85,7 +96,7 @@ def main():
             filters["roe_min"] = args.roe_min
         if args.dividend_yield_min is not None:
             filters["dividend_yield_min"] = args.dividend_yield_min
-        result = stock_analyst.screen_stocks(filters, sort_by=args.sort_by, limit=args.limit)
+        result = stock_analyst.screen_stocks(filters, region=args.region, sort_by=args.sort_by, limit=args.limit)
     elif args.raw and args.symbol:
         result = stock_analyst.get_raw_data(args.symbol, args.raw)
     elif args.symbols and args.compare:
@@ -93,19 +104,21 @@ def main():
         result = stock_analyst.compare_stocks(symbol_list)
     elif args.symbol:
         if args.analysis == "full":
-            result = stock_analyst.analyze(args.symbol)
+            result = stock_analyst.analyze(args.symbol, region=args.region)
         elif args.analysis == "fundamentals":
             result = stock_analyst.get_fundamentals(args.symbol)
         elif args.analysis == "technicals":
             result = stock_analyst.get_technicals(args.symbol, period=args.period)
         elif args.analysis == "peers":
-            result = stock_analyst.get_peer_comparison(args.symbol)
+            result = stock_analyst.get_peer_comparison(args.symbol, region=args.region)
         elif args.analysis == "dcf":
             result = stock_analyst.get_dcf_valuation(args.symbol)
         elif args.analysis == "forecast":
             result = stock_analyst.get_revenue_forecast(args.symbol)
         elif args.analysis == "news":
             result = stock_analyst.get_news(args.symbol)
+        elif args.analysis == "asset":
+            result = stock_analyst.analyze_asset(args.symbol, asset_type=args.asset_type)
     else:
         parser.print_help()
         sys.exit(1)

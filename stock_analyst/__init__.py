@@ -12,9 +12,11 @@ from stock_analyst.config import Settings, get_settings
 from stock_analyst.engine.data_provider import get_provider
 from stock_analyst.engine.fundamentals import FundamentalAnalyzer
 from stock_analyst.engine.market import MarketAnalyzer
+from stock_analyst.engine.multi_asset import MultiAssetAnalyzer
 from stock_analyst.engine.news import NewsAnalyzer
 from stock_analyst.engine.peers import PeerAnalyzer
 from stock_analyst.engine.screener import StockScreener
+from stock_analyst.engine.search import TickerSearch
 from stock_analyst.engine.technicals import TechnicalAnalyzer
 from stock_analyst.fa.dcf_runner import run_dcf
 from stock_analyst.fa.forecast_runner import run_forecast
@@ -35,10 +37,10 @@ def _init():
         _provider = get_provider(_config)
 
 
-def analyze(symbol: str, include_peers: bool = True) -> dict[str, Any]:
+def analyze(symbol: str, region: str = "in", include_peers: bool = True) -> dict[str, Any]:
     """Full analysis: fundamentals + technicals + peers + DCF + forecast + news."""
     _init()
-    report = _build_report(symbol, include_peers=include_peers)
+    report = _build_report(symbol, region=region, include_peers=include_peers)
     return report.to_dict()
 
 
@@ -57,11 +59,11 @@ def get_technicals(symbol: str, period: str = "") -> dict[str, Any]:
     return ta.analyze(symbol, period=period)
 
 
-def get_peer_comparison(symbol: str) -> dict[str, Any]:
+def get_peer_comparison(symbol: str, region: str = "in") -> dict[str, Any]:
     """Peer comparison tables."""
     _init()
     pa = PeerAnalyzer(_provider, _cache, _config)
-    peers = pa.discover_peers(symbol)
+    peers = pa.discover_peers(symbol, region=region)
     fund = pa.get_peer_fundamentals(symbol, peers)
     tech = pa.get_peer_technicals(symbol, peers)
     return build_peer_comparison(
@@ -116,28 +118,55 @@ def get_raw_data(symbol: str, data_type: str) -> dict[str, Any]:
     return data or {"error": f"No cached data for {symbol}:{data_type}"}
 
 
-def get_market_mood() -> dict[str, Any]:
-    """Market mood: MMI + India VIX + Nifty/Sensex."""
+def get_market_mood(region: str = "in") -> dict[str, Any]:
+    """Market mood: region-specific indices + volatility."""
     _init()
     ma = MarketAnalyzer(_cache, _config)
-    return ma.get_mood()
+    return ma.get_mood(region=region)
 
 
 def screen_stocks(
     filters: dict[str, Any] | None = None,
+    region: str = "in",
     sort_by: str = "market_cap",
     sort_asc: bool = False,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Screen Indian stocks by criteria (market cap, PE, ROE, sector, etc.)."""
+    """Screen stocks by criteria (market cap, PE, ROE, sector, etc.) in any region."""
     _init()
     screener = StockScreener(_cache, _config)
-    return screener.screen(filters or {}, sort_by=sort_by, sort_asc=sort_asc, limit=limit)
+    return screener.screen(filters or {}, region=region, sort_by=sort_by, sort_asc=sort_asc, limit=limit)
 
 
 def get_screener_filters() -> dict[str, Any]:
     """Return available screener filter keys and descriptions."""
     return StockScreener.available_filters()
+
+
+def search_tickers(
+    query: str,
+    instrument_type: str = "stock",
+    region: str | None = None,
+    limit: int = 10,
+) -> dict[str, Any]:
+    """Search for tickers by name or symbol across regions."""
+    _init()
+    search = TickerSearch(_cache, _config)
+    return search.search(query, instrument_type=instrument_type, region=region, limit=limit)
+
+
+def analyze_asset(
+    symbol: str,
+    asset_type: str = "stock",
+    include_fundamentals: bool = True,
+    include_technicals: bool = True,
+) -> dict[str, Any]:
+    """Analyze any asset: stock, ETF, index, commodity, crypto, currency."""
+    _init()
+    analyzer = MultiAssetAnalyzer(_provider, _cache, _config)
+    return analyzer.analyze_asset(symbol, asset_type=asset_type, 
+                                  include_fundamentals=include_fundamentals,
+                                  include_technicals=include_technicals)
 
 
 def get_config() -> dict[str, Any]:
@@ -269,7 +298,7 @@ def set_config(key: str, value: str) -> dict[str, Any]:
         }
 
 
-def _build_report(symbol: str, include_peers: bool = True) -> StockReport:
+def _build_report(symbol: str, region: str = "in", include_peers: bool = True) -> StockReport:
     fa = FundamentalAnalyzer(_provider, _cache, _config)
     data = fa.fetch_all(symbol)
 
@@ -297,7 +326,7 @@ def _build_report(symbol: str, include_peers: bool = True) -> StockReport:
     if include_peers:
         try:
             pa = PeerAnalyzer(_provider, _cache, _config)
-            peers = pa.discover_peers(symbol)
+            peers = pa.discover_peers(symbol, region=region)
             if peers:
                 fund = pa.get_peer_fundamentals(symbol, peers)
                 tech = pa.get_peer_technicals(symbol, peers)

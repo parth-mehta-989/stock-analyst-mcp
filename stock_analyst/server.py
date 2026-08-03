@@ -21,15 +21,16 @@ def _ok(result, **kwargs) -> str:
 
 
 @mcp.tool()
-def analyze_stock(symbol: str) -> str:
-    """Retrieve full stock analysis: fundamentals, technicals, peer comparison, DCF valuation, revenue forecast, and news for an Indian NSE/BSE stock.
+def analyze_stock(symbol: str, region: str = "in") -> str:
+    """Retrieve full stock analysis: fundamentals, technicals, peer comparison, DCF valuation, revenue forecast, and news.
 
     Args:
-        symbol: Stock ticker symbol (e.g., RELIANCE, TCS, INFY). Automatically appends .NS for NSE.
+        symbol: Stock ticker symbol (e.g., RELIANCE for India, AAPL for US, 0700.HK for Hong Kong).
+        region: Region code (us, gb, de, jp, in, etc.). Default: in (India).
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.analyze(symbol))
+        return _ok(stock_analyst.analyze(symbol, region=region))
     except Exception as e:
         logger.exception("analyze_stock failed")
         return _error("analysis_failed", str(e))
@@ -67,15 +68,16 @@ def get_technicals(symbol: str, period: str = "1y") -> str:
 
 
 @mcp.tool()
-def get_peer_comparison(symbol: str) -> str:
-    """Retrieve peer comparison: fundamental and technical metrics ranked among industry peers discovered via yfinance Industry API.
+def get_peer_comparison(symbol: str, region: str = "in") -> str:
+    """Retrieve peer comparison: fundamental and technical metrics ranked among industry peers.
 
     Args:
         symbol: Stock ticker symbol.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_peer_comparison(symbol))
+        return _ok(stock_analyst.get_peer_comparison(symbol, region=region))
     except Exception as e:
         logger.exception("get_peer_comparison failed")
         return _error("peer_comparison_failed", str(e))
@@ -164,28 +166,32 @@ def get_raw_data(symbol: str, data_type: str) -> str:
 
 
 @mcp.tool()
-def get_market_mood() -> str:
-    """Retrieve current market mood: Market Mood Index (MMI) from tickertape.in, India VIX fear gauge, Nifty 50 and Sensex levels with day change, and overall market assessment.
+def get_market_mood(region: str = "in") -> str:
+    """Retrieve current market mood: region-specific indices, volatility index, and market assessment.
 
-    No arguments needed. Returns macro market context for investment timing decisions.
+    Args:
+        region: Region code (us, gb, de, jp, in, etc.). Default: in. For India, includes MMI from tickertape.in.
+    
+    Returns macro market context for investment timing decisions.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_market_mood())
+        return _ok(stock_analyst.get_market_mood(region=region))
     except Exception as e:
         logger.exception("get_market_mood failed")
         return _error("market_mood_failed", str(e))
 
 
 @mcp.tool()
-def screen_stocks(filters: str = "", sort_by: str = "market_cap", limit: int = 50) -> str:
-    """Screen Indian stocks by fundamental, valuation, and technical criteria.
+def screen_stocks(filters: str = "", region: str = "in", sort_by: str = "market_cap", limit: int = 50) -> str:
+    """Screen stocks by fundamental, valuation, and technical criteria in any region.
 
     Args:
-        filters: JSON string of filter criteria. Example: '{"sector": "Technology", "pe_max": 30, "roe_min": 0.15, "market_cap_min": 50000000000}'.
+        filters: JSON string of filter criteria. Example: '{"sector": "Technology", "pe_max": 30, "roe_min": 0.15}'.
             Available filters: sector, industry, market_cap_min/max, pe_min/max, pb_min/max,
             roe_min/max, dividend_yield_min/max, revenue_growth_min/max, debt_to_equity_min/max,
             current_ratio_min/max, 52w_change_min/max, beta_min/max.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
         sort_by: Sort field — one of: market_cap, pe, pb, roe, dividend_yield, revenue_growth, price, change, volume, ticker. Default: market_cap.
         limit: Max results (1-250). Default: 50.
     """
@@ -193,7 +199,7 @@ def screen_stocks(filters: str = "", sort_by: str = "market_cap", limit: int = 5
         import json as _json
         import stock_analyst
         filter_dict = _json.loads(filters) if filters else {}
-        return _ok(stock_analyst.screen_stocks(filter_dict, sort_by=sort_by, limit=limit))
+        return _ok(stock_analyst.screen_stocks(filter_dict, region=region, sort_by=sort_by, limit=limit))
     except Exception as e:
         logger.exception("screen_stocks failed")
         return _error("screen_failed", str(e))
@@ -211,6 +217,45 @@ def get_screener_filters() -> str:
     except Exception as e:
         logger.exception("get_screener_filters failed")
         return _error("screener_filters_failed", str(e))
+
+
+@mcp.tool()
+def search_tickers(query: str, instrument_type: str = "stock", region: str = "", limit: int = 10) -> str:
+    """Search for tickers by name or symbol across regions.
+
+    Args:
+        query: Search term (ticker symbol or company name, e.g., 'Apple', 'AAPL', 'Tesla').
+        instrument_type: Type of instrument (stock, etf, mutualfund, index, future, currency, cryptocurrency). Default: stock.
+        region: Optional region filter (us, gb, de, jp, in, etc.). Leave empty for all regions.
+        limit: Max results (1-50). Default: 10.
+    """
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.search_tickers(query, instrument_type=instrument_type, 
+                                               region=region if region else None, limit=limit))
+    except Exception as e:
+        logger.exception("search_tickers failed")
+        return _error("search_failed", str(e))
+
+
+@mcp.tool()
+def analyze_asset(symbol: str, asset_type: str = "stock", include_fundamentals: bool = True, include_technicals: bool = True) -> str:
+    """Analyze any asset class: stocks, ETFs, indices, commodities, crypto, currencies.
+
+    Args:
+        symbol: Ticker symbol (e.g., 'AAPL' for stock, 'SPY' for ETF, 'GC=F' for gold futures, 'BTC-USD' for Bitcoin, 'EURUSD=X' for currency pair).
+        asset_type: Type of asset (stock, etf, index, commodity, crypto, currency). Default: stock.
+        include_fundamentals: Include fundamental ratios (may not be available for all assets). Default: true.
+        include_technicals: Include technical analysis. Default: true.
+    """
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.analyze_asset(symbol, asset_type=asset_type, 
+                                              include_fundamentals=include_fundamentals,
+                                              include_technicals=include_technicals))
+    except Exception as e:
+        logger.exception("analyze_asset failed")
+        return _error("asset_analysis_failed", str(e))
 
 
 @mcp.tool()

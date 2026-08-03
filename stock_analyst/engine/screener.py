@@ -54,12 +54,12 @@ _SORT_MAP: Dict[str, str] = {
 }
 
 
-def _build_equity_query(filters: Dict[str, Any]) -> EquityQuery:
+def _build_equity_query(filters: Dict[str, Any], region: str = "in") -> EquityQuery:
     """Build EquityQuery from user-friendly filter dict."""
     conditions: List[EquityQuery] = []
 
-    # Always filter to India region
-    conditions.append(EquityQuery("eq", ["region", "in"]))
+    # Filter to specified region
+    conditions.append(EquityQuery("eq", ["region", region]))
 
     # Sector / industry (equality)
     if "sector" in filters:
@@ -92,20 +92,21 @@ class StockScreener:
     def screen(
         self,
         filters: Dict[str, Any],
+        region: str = "in",
         sort_by: str = "market_cap",
         sort_asc: bool = False,
         limit: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Screen stocks by criteria. Tries yfinance -> NSE CSV -> screener.in."""
+        """Screen stocks by criteria. Tries yfinance -> screener.in."""
         limit = limit or self._config.screener_max_results
 
         # Try yfinance EquityQuery first
-        result = self._yfinance_screen(filters, sort_by, sort_asc, limit)
+        result = self._yfinance_screen(filters, region, sort_by, sort_asc, limit)
         if result["stocks"]:
             return result
 
-        # Fallback: screener.in
-        if self._config.screener_enabled:
+        # Fallback: screener.in (India-only)
+        if self._config.screener_enabled and region == "in":
             result = self._screener_in_screen(filters, limit)
             if result["stocks"]:
                 return result
@@ -113,6 +114,7 @@ class StockScreener:
         return {
             "source": "none",
             "count": 0,
+            "region": region,
             "filters_applied": filters,
             "stocks": [],
             "message": "No stocks matched the given filters from any source.",
@@ -121,13 +123,14 @@ class StockScreener:
     def _yfinance_screen(
         self,
         filters: Dict[str, Any],
+        region: str,
         sort_by: str,
         sort_asc: bool,
         limit: int,
     ) -> Dict[str, Any]:
         """Screen using yfinance EquityQuery."""
         try:
-            query = _build_equity_query(filters)
+            query = _build_equity_query(filters, region=region)
             sort_field = _SORT_MAP.get(sort_by, "intradaymarketcap")
 
             response = yf.screen(
@@ -159,13 +162,14 @@ class StockScreener:
 
             return {
                 "source": "yfinance",
+                "region": region,
                 "count": len(stocks),
                 "filters_applied": filters,
                 "stocks": stocks,
             }
         except Exception as e:
             logger.debug("yfinance screen failed: %s", e)
-            return {"source": "yfinance", "count": 0, "stocks": []}
+            return {"source": "yfinance", "region": region, "count": 0, "stocks": []}
 
     def _screener_in_screen(
         self,

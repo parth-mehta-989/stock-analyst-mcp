@@ -1,4 +1,4 @@
-"""Market mood: tickertape MMI + India VIX + Nifty/Sensex context."""
+"""Market mood: region-specific indices + VIX/volatility context."""
 
 import logging
 import re
@@ -12,6 +12,32 @@ from stock_analyst.cache.base import Cache
 from stock_analyst.config import Settings
 
 logger = logging.getLogger(__name__)
+
+# Region -> (primary_index, vix_index)
+_REGION_INDICES = {
+    "us": ("^GSPC", "^VIX"),
+    "gb": ("^FTSE", "^VIX"),
+    "de": ("^GDAXI", "^VDAX"),
+    "fr": ("^FCHI", "^VDAX"),
+    "it": ("^FTSEMIB", "^VIX"),
+    "es": ("^IBEX", "^VIX"),
+    "nl": ("^AEX", "^VIX"),
+    "ch": ("^SSMI", "^VIX"),
+    "se": ("^OMXS30", "^VIX"),
+    "jp": ("^N225", "^VIX"),
+    "hk": ("^HSI", "^VIX"),
+    "cn": ("^SSEC", "^VIX"),
+    "sg": ("^STI", "^VIX"),
+    "au": ("^AXJO", "^VIX"),
+    "nz": ("^NZ50", "^VIX"),
+    "in": ("^NSEI", "^INDIAVIX"),
+    "br": ("^BVSP", "^VIX"),
+    "mx": ("^MXX", "^VIX"),
+    "ca": ("^GSPTSE", "^VIX"),
+    "kr": ("^KS11", "^VIX"),
+    "th": ("^SETI", "^VIX"),
+    "my": ("^KLSE", "^VIX"),
+}
 
 
 def _mmi_label(value: float) -> str:
@@ -55,35 +81,39 @@ class MarketAnalyzer:
         self._cache = cache
         self._config = config
 
-    def get_mood(self) -> Dict[str, Any]:
-        """Get market mood: MMI + VIX + indices."""
-        cache_key = "market_mood"
+    def get_mood(self, region: str = "in") -> Dict[str, Any]:
+        """Get market mood: region-specific indices + volatility."""
+        cache_key = f"market_mood:{region}"
         cached = self._cache.get(cache_key)
         if cached:
             return cached
 
         result: Dict[str, Any] = {
-            "mmi": {},
-            "india_vix": {},
-            "nifty_50": {},
-            "sensex": {},
+            "region": region,
+            "primary_index": {},
+            "volatility_index": {},
         }
 
-        # 1. Tickertape Market Mood Index
-        result["mmi"] = self._scrape_mmi()
+        # Get region-specific indices
+        primary_idx, vix_idx = _REGION_INDICES.get(region, ("^GSPC", "^VIX"))
 
-        # 2. India VIX (fear gauge fallback / complement)
-        result["india_vix"] = _fetch_index("^INDIAVIX")
+        # 1. Primary index (e.g., Nifty 50 for India, S&P 500 for US)
+        result["primary_index"] = _fetch_index(primary_idx)
+        result["primary_index"]["symbol"] = primary_idx
 
-        # 3. Nifty 50
-        result["nifty_50"] = _fetch_index("^NSEI")
+        # 2. Volatility index (e.g., India VIX for India, VIX for US)
+        result["volatility_index"] = _fetch_index(vix_idx)
+        result["volatility_index"]["symbol"] = vix_idx
 
-        # 4. Sensex
-        result["sensex"] = _fetch_index("^BSESN")
+        # India-specific: try to get MMI from tickertape
+        if region == "in":
+            result["mmi"] = self._scrape_mmi()
+        else:
+            result["mmi"] = {"value": None, "label": "unknown", "source": "none"}
 
-        # Overall assessment
+        # Overall assessment based on volatility
+        vix_price = result["volatility_index"].get("price")
         mmi_val = result["mmi"].get("value")
-        vix_price = result["india_vix"].get("price")
 
         assessment = "unknown"
         if mmi_val is not None:

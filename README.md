@@ -1,6 +1,6 @@
 # stock-analyst-mcp
 
-MCP server for Indian stock market analysis — fundamentals, technicals, DCF valuation, peer comparison, and more.
+MCP server for global stock market analysis — fundamentals, technicals, DCF valuation, peer comparison, multi-asset support, and more. Works for 50+ regions worldwide.
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
@@ -47,20 +47,22 @@ Or if installed via pip:
 
 | Tool | Description |
 |------|-------------|
-| `analyze_stock` | Full analysis: fundamentals + technicals + peers + DCF + forecast + news |
+| `analyze_stock` | Full analysis: fundamentals + technicals + peers + DCF + forecast + news (any region) |
 | `get_fundamentals` | Financial ratios: profitability, liquidity, leverage, efficiency, valuation |
-| `get_technicals` | Technical signals: EMA trend, RSI, MACD, Bollinger position |
-| `get_peer_comparison` | Peer fundamental + technical metrics with rankings |
-| `get_dcf_valuation` | DCF: WACC (India-adjusted), equity value/share, sensitivity range |
+| `get_technicals` | Technical signals: EMA trend, RSI, MACD, Bollinger Bands |
+| `get_peer_comparison` | Peer fundamental + technical metrics with rankings (region-scoped) |
+| `get_dcf_valuation` | DCF: WACC, equity value/share, sensitivity range |
 | `get_revenue_forecast` | Revenue forecast: base/bull/bear scenarios |
 | `get_news` | News headlines with VADER sentiment + article snippets + analyst recommendations |
-| `get_market_mood` | Market Mood Index (tickertape), India VIX, Nifty 50, Sensex |
-| `screen_stocks` | Screen Indian stocks by filters (sector, PE, ROE, market cap, etc.) |
+| `get_market_mood` | Region-specific indices + volatility index + market assessment |
+| `screen_stocks` | Screen stocks by filters (sector, PE, ROE, market cap, etc.) in any region |
 | `get_screener_filters` | List available screener filter keys and sort options |
+| `search_tickers` | Search for tickers by name or symbol across regions (stocks, ETFs, indices, crypto, etc.) |
+| `analyze_asset` | Analyze any asset class: stocks, ETFs, indices, commodities, crypto, currencies |
 | `compare_stocks` | Side-by-side comparison of multiple stocks |
 | `get_raw_data` | Fetch cached raw financials for deep dives |
 | `get_config` | View current configuration settings for all analysis tools |
-| `set_config` | Update configuration settings dynamically (e.g., technical analysis period) |
+| `set_config` | Update configuration settings dynamically |
 
 ### Configuration Tools
 
@@ -173,18 +175,37 @@ stock-analyst --symbol RELIANCE --raw financials
 # Market mood (no symbol needed)
 stock-analyst --analysis market-mood
 
-# Stock screener
+# Stock screener (India)
 stock-analyst --screen --sector Technology --pe-max 30 --roe-min 0.15
 stock-analyst --screen --market-cap-min 50000000000 --sort-by pe --limit 20
+
+# Global stocks (any region)
+stock-analyst --symbol AAPL --region us
+stock-analyst --symbol 0700.HK --region hk
+stock-analyst --screen --region gb --sector Technology --pe-max 25
+
+# Market mood (global)
+stock-analyst --analysis market-mood --region us
+stock-analyst --analysis market-mood --region de
+
+# Ticker search
+stock-analyst --search "Apple" --search-type stock --region us
+stock-analyst --search "Bitcoin" --search-type cryptocurrency
+
+# Multi-asset analysis
+stock-analyst --symbol SPY --analysis asset --asset-type etf
+stock-analyst --symbol GC=F --analysis asset --asset-type commodity
+stock-analyst --symbol BTC-USD --analysis asset --asset-type crypto
 ```
 
 ## Configuration
 
-All settings configurable via environment variables with `SA_` prefix. Defaults work out of the box for Indian markets (NSE).
+All settings configurable via environment variables with `SA_` prefix. Defaults work out of the box for Indian markets (NSE). Supports 50+ regions globally.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SA_DEFAULT_EXCHANGE` | `.NS` | NSE (`.NS`) or BSE (`.BO`) |
+| `SA_DEFAULT_REGION` | `in` | Region code (us, gb, de, jp, in, etc.) |
+| `SA_DEFAULT_EXCHANGE` | `.NS` | NSE (`.NS`) or BSE (`.BO`) — for India only |
 | `SA_DEFAULT_PERIOD` | `1y` | Historical data period |
 | `SA_CACHE_BACKEND` | `redis` | `redis`, `csv`, or `none` |
 | `SA_REDIS_URL` | `redis://localhost:6379/0` | Redis connection URL |
@@ -204,23 +225,41 @@ See `configurations.env.example` for the full list.
 from stock_analyst import (
     analyze, get_fundamentals, get_technicals,
     get_news, get_market_mood, screen_stocks,
+    search_tickers, analyze_asset,
 )
 
+# Indian stocks (default region)
 result = analyze("RELIANCE")
 ratios = get_fundamentals("TCS")
 signals = get_technicals("INFY", period="6mo")
+
+# Global stocks (any region)
+us_stock = analyze("AAPL", region="us")
+hk_stock = analyze("0700.HK", region="hk")
+uk_stock = analyze("HSBA", region="gb")
 
 # News with sentiment
 news = get_news("TCS")
 # Returns headlines with sentiment_score, sentiment_label, snippet
 
-# Market mood
-mood = get_market_mood()
-# Returns MMI value/label, India VIX, Nifty 50, Sensex, assessment
+# Market mood (region-specific)
+mood_in = get_market_mood(region="in")  # Includes MMI from tickertape
+mood_us = get_market_mood(region="us")  # S&P 500 + VIX
+mood_de = get_market_mood(region="de")  # DAX + VDAX
 
-# Stock screener
-results = screen_stocks({"sector": "Technology", "pe_max": 30, "roe_min": 0.15})
-# Returns matching stocks with fundamentals from yfinance
+# Stock screener (any region)
+results_in = screen_stocks({"sector": "Technology", "pe_max": 30}, region="in")
+results_us = screen_stocks({"sector": "Technology", "pe_max": 40}, region="us")
+
+# Ticker search
+apple_results = search_tickers("Apple", instrument_type="stock", region="us")
+crypto_results = search_tickers("Bitcoin", instrument_type="cryptocurrency")
+
+# Multi-asset analysis
+etf = analyze_asset("SPY", asset_type="etf")
+commodity = analyze_asset("GC=F", asset_type="commodity")
+crypto = analyze_asset("BTC-USD", asset_type="crypto")
+currency = analyze_asset("EURUSD=X", asset_type="currency")
 ```
 
 ## Testing
@@ -241,11 +280,30 @@ pytest tests/test_peers.py -v
 
 ## Data Sources
 
-- **yfinance** — OHLCV, financials, balance sheet, cashflow, info, peer discovery via Industry API, stock screener via EquityQuery
-- **screener.in** — peer discovery + stock screener fallback (best-effort, graceful degradation)
-- **tickertape.in** — Market Mood Index (MMI) scraping
+- **yfinance** — OHLCV, financials, balance sheet, cashflow, info, peer discovery via Industry API, stock screener via EquityQuery (50+ regions)
+- **screener.in** — peer discovery + stock screener fallback for India (best-effort, graceful degradation)
+- **tickertape.in** — Market Mood Index (MMI) scraping for India
 - **VADER** — headline sentiment analysis (vaderSentiment)
 - **India-adjusted defaults** — risk-free rate 7%, cost of debt 9%, tax 25%
+
+## Supported Regions
+
+50+ regions via yfinance: US, UK, Germany, France, Italy, Spain, Netherlands, Belgium, Switzerland, Austria, Sweden, Norway, Denmark, Finland, Poland, Czech Republic, Romania, Portugal, Greece, Hungary, Ireland, Lithuania, Latvia, Estonia, Canada, Mexico, Brazil, Argentina, Chile, Peru, Colombia, Venezuela, Australia, New Zealand, Japan, South Korea, China, Hong Kong, Singapore, Malaysia, Thailand, Philippines, Indonesia, Vietnam, Pakistan, Sri Lanka, UAE, Saudi Arabia, Kuwait, Qatar, Israel, Egypt, Turkey, South Africa, and more.
+
+## Regions Quick Reference
+
+| Region | Code | Primary Index | VIX |
+|--------|------|---------------|-----|
+| USA | `us` | S&P 500 (^GSPC) | ^VIX |
+| UK | `gb` | FTSE 100 (^FTSE) | ^VIX |
+| Germany | `de` | DAX (^GDAXI) | ^VDAX |
+| France | `fr` | CAC 40 (^FCHI) | ^VDAX |
+| Japan | `jp` | Nikkei 225 (^N225) | ^VIX |
+| Hong Kong | `hk` | Hang Seng (^HSI) | ^VIX |
+| India | `in` | Nifty 50 (^NSEI) | ^INDIAVIX |
+| Australia | `au` | ASX 200 (^AXJO) | ^VIX |
+| Canada | `ca` | TSX (^GSPTSE) | ^VIX |
+| Brazil | `br` | Bovespa (^BVSP) | ^VIX |
 
 ## License
 

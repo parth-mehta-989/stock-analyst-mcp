@@ -32,8 +32,12 @@ class Settings(BaseSettings):
     # Data Provider
     data_provider: str = "yfinance"
     default_exchange: str = ".NS"
+    default_region: str = "in"
     default_period: str = "1y"
     default_interval: str = "1d"
+    
+    # Supported regions (yfinance EquityQuery.valid_values["region"])
+    supported_regions: str = "ae,ar,at,au,be,br,ca,ch,cl,cn,co,cz,de,dk,ee,eg,es,fi,fr,gb,gr,hk,hu,id,ie,il,in,is,it,jp,kr,kw,lk,lt,lv,mx,my,nl,no,nz,pe,ph,pk,pl,pt,qa,ro,ru,sa,se,sg,sr,th,tr,tw,us,ve,vn,za"
 
     # Cache
     cache_backend: str = "redis"
@@ -135,6 +139,10 @@ class Settings(BaseSettings):
     @property
     def peer_technical_metrics_list(self) -> List[str]:
         return _csv_to_list(self.peers_technical_metrics)
+
+    @property
+    def supported_regions_list(self) -> List[str]:
+        return _csv_to_list(self.supported_regions)
 
 
 def get_settings() -> Settings:

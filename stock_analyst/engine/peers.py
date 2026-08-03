@@ -43,16 +43,16 @@ class PeerAnalyzer:
             return s
         return f"{s}{self._config.default_exchange}"
 
-    def discover_peers(self, symbol: str) -> List[str]:
-        """Discover peer symbols. Tries yfinance Industry API first, screener.in second."""
-        cache_key = f"peers_list:{symbol}"
+    def discover_peers(self, symbol: str, region: str = "in") -> List[str]:
+        """Discover peer symbols. Tries yfinance Industry API first, screener.in second (India only)."""
+        cache_key = f"peers_list:{symbol}:{region}"
         cached = self._cache.get(cache_key)
         if cached:
             return cached
 
-        peers: List[str] = self._yfinance_industry(symbol)
+        peers: List[str] = self._yfinance_industry(symbol, region=region)
 
-        if not peers and self._config.screener_enabled:
+        if not peers and self._config.screener_enabled and region == "in":
             peers = self._scrape_screener(symbol)
 
         # Remove the target stock from peers
@@ -62,8 +62,8 @@ class PeerAnalyzer:
         self._cache.set(cache_key, peers)
         return peers
 
-    def _yfinance_industry(self, symbol: str) -> List[str]:
-        """Discover peers via yfinance Industry top_companies (region=IN)."""
+    def _yfinance_industry(self, symbol: str, region: str = "in") -> List[str]:
+        """Discover peers via yfinance Industry top_companies."""
         try:
             info = self._provider.get_info(symbol)
             industry_key = info.get("industryKey", "")
@@ -71,7 +71,9 @@ class PeerAnalyzer:
                 logger.debug("No industryKey for %s", symbol)
                 return []
 
-            industry = yf.Industry(industry_key, region="IN")
+            # Map region code to yfinance region (uppercase)
+            yf_region = region.upper() if region.lower() != "in" else "IN"
+            industry = yf.Industry(industry_key, region=yf_region)
             top = industry.top_companies
             if top is None or top.empty:
                 logger.debug("No top_companies for industry %s", industry_key)
