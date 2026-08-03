@@ -196,9 +196,8 @@ def screen_stocks(filters: str = "", region: str = "in", sort_by: str = "market_
         limit: Max results (1-250). Default: 50.
     """
     try:
-        import json as _json
         import stock_analyst
-        filter_dict = _json.loads(filters) if filters else {}
+        filter_dict = json.loads(filters) if filters else {}
         return _ok(stock_analyst.screen_stocks(filter_dict, region=region, sort_by=sort_by, limit=limit))
     except Exception as e:
         logger.exception("screen_stocks failed")

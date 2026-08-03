@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stock_analyst.engine.market import MarketAnalyzer, _mmi_label, _fetch_index
+from stock_analyst.engine.market import _fetch_index, _mmi_label, MarketAnalyzer
 
 
 @pytest.fixture
