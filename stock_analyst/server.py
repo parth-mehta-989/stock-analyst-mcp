@@ -37,31 +37,33 @@ def analyze_stock(symbol: str, region: str = "in") -> str:
 
 
 @mcp.tool()
-def get_fundamentals(symbol: str) -> str:
+def get_fundamentals(symbol: str, region: str = "in") -> str:
     """Retrieve financial ratios: profitability (ROE, ROA, margins), liquidity, leverage, efficiency, and valuation (PE, PB, EV/EBITDA) with benchmark interpretations.
 
     Args:
-        symbol: Stock ticker symbol (e.g., RELIANCE, TCS).
+        symbol: Stock ticker symbol (e.g., RELIANCE for India, AAPL for US).
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_fundamentals(symbol))
+        return _ok(stock_analyst.get_fundamentals(symbol, region=region))
     except Exception as e:
         logger.exception("get_fundamentals failed")
         return _error("fundamentals_failed", str(e))
 
 
 @mcp.tool()
-def get_technicals(symbol: str, period: str = "1y") -> str:
+def get_technicals(symbol: str, region: str = "in", period: str = "1y") -> str:
     """Retrieve technical signals: EMA trend, RSI (overbought/oversold), MACD crossovers, Bollinger Band position, and overall signal.
 
     Args:
         symbol: Stock ticker symbol.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
         period: Historical period — one of: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max. Default: 1y.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_technicals(symbol, period=period))
+        return _ok(stock_analyst.get_technicals(symbol, region=region, period=period))
     except Exception as e:
         logger.exception("get_technicals failed")
         return _error("technicals_failed", str(e))
@@ -84,82 +86,87 @@ def get_peer_comparison(symbol: str, region: str = "in") -> str:
 
 
 @mcp.tool()
-def get_dcf_valuation(symbol: str) -> str:
-    """Retrieve DCF valuation: WACC (India-adjusted defaults), equity value per share via perpetuity growth and exit multiple methods, with sensitivity range.
+def get_dcf_valuation(symbol: str, region: str = "in") -> str:
+    """Retrieve DCF valuation: WACC, equity value per share via perpetuity growth and exit multiple methods, with sensitivity range.
 
     Args:
         symbol: Stock ticker symbol.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_dcf_valuation(symbol))
+        return _ok(stock_analyst.get_dcf_valuation(symbol, region=region))
     except Exception as e:
         logger.exception("get_dcf_valuation failed")
         return _error("dcf_failed", str(e))
 
 
 @mcp.tool()
-def get_revenue_forecast(symbol: str) -> str:
+def get_revenue_forecast(symbol: str, region: str = "in") -> str:
     """Retrieve revenue forecast with base, bull, and bear scenarios including trend analysis and growth rates.
 
     Args:
         symbol: Stock ticker symbol.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_revenue_forecast(symbol))
+        return _ok(stock_analyst.get_revenue_forecast(symbol, region=region))
     except Exception as e:
         logger.exception("get_revenue_forecast failed")
         return _error("forecast_failed", str(e))
 
 
 @mcp.tool()
-def get_news(symbol: str) -> str:
+def get_news(symbol: str, region: str = "in") -> str:
     """Retrieve recent news headlines with sentiment analysis (VADER), article snippets, and analyst recommendation summary.
 
     Args:
         symbol: Stock ticker symbol.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_news(symbol))
+        return _ok(stock_analyst.get_news(symbol, region=region))
     except Exception as e:
         logger.exception("get_news failed")
         return _error("news_failed", str(e))
 
 
 @mcp.tool()
-def compare_stocks(symbols: str) -> str:
+def compare_stocks(symbols: str, region: str = "in") -> str:
     """Compare multiple stocks side-by-side with full analysis for each.
 
     Args:
-        symbols: Comma-separated stock ticker symbols (e.g., "RELIANCE,TCS,INFY").
+        symbols: Comma-separated stock ticker symbols (e.g., "RELIANCE,TCS,INFY" or "AAPL,MSFT,GOOGL").
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     try:
         import stock_analyst
         symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
         if not symbol_list:
             return _error("invalid_input", "Provide at least one symbol")
-        return _ok(stock_analyst.compare_stocks(symbol_list))
+        return _ok(stock_analyst.compare_stocks(symbol_list, region=region))
     except Exception as e:
         logger.exception("compare_stocks failed")
         return _error("comparison_failed", str(e))
 
 
 @mcp.tool()
-def get_raw_data(symbol: str, data_type: str) -> str:
+def get_raw_data(symbol: str, data_type: str, region: str = "in") -> str:
     """Fetch cached raw financial data for deep dives. Triggers a data fetch if not cached.
 
     Args:
         symbol: Stock ticker symbol.
         data_type: Type of data — one of: info, financials, balance_sheet, cashflow, ohlcv.
+        region: Region code (us, gb, de, jp, in, etc.). Default: in.
     """
     valid_types = {"info", "financials", "balance_sheet", "cashflow", "ohlcv"}
     if data_type not in valid_types:
         return _error("invalid_input", f"data_type must be one of: {', '.join(sorted(valid_types))}")
     try:
         import stock_analyst
-        return _ok(stock_analyst.get_raw_data(symbol, data_type))
+        return _ok(stock_analyst.get_raw_data(symbol, data_type, region=region))
     except Exception as e:
         logger.exception("get_raw_data failed")
         return _error("raw_data_failed", str(e))
@@ -238,18 +245,19 @@ def search_tickers(query: str, instrument_type: str = "stock", region: str = "",
 
 
 @mcp.tool()
-def analyze_asset(symbol: str, asset_type: str = "stock", include_fundamentals: bool = True, include_technicals: bool = True) -> str:
+def analyze_asset(symbol: str, asset_type: str = "stock", region: str = "in", include_fundamentals: bool = True, include_technicals: bool = True) -> str:
     """Analyze any asset class: stocks, ETFs, indices, commodities, crypto, currencies.
 
     Args:
         symbol: Ticker symbol (e.g., 'AAPL' for stock, 'SPY' for ETF, 'GC=F' for gold futures, 'BTC-USD' for Bitcoin, 'EURUSD=X' for currency pair).
         asset_type: Type of asset (stock, etf, index, commodity, crypto, currency). Default: stock.
+        region: Region code for stock asset type (us, gb, de, jp, in, etc.). Default: in.
         include_fundamentals: Include fundamental ratios (may not be available for all assets). Default: true.
         include_technicals: Include technical analysis. Default: true.
     """
     try:
         import stock_analyst
-        return _ok(stock_analyst.analyze_asset(symbol, asset_type=asset_type, 
+        return _ok(stock_analyst.analyze_asset(symbol, asset_type=asset_type, region=region,
                                               include_fundamentals=include_fundamentals,
                                               include_technicals=include_technicals))
     except Exception as e:

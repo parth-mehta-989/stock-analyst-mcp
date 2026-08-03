@@ -13,9 +13,10 @@ class TestYFinanceProvider:
     def provider(self, config):
         return YFinanceProvider(config)
 
-    def test_ticker_appends_exchange(self, provider):
+    def test_ticker_passes_symbol_through(self, provider):
+        """Provider now passes symbols through; resolution happens at public API layer."""
         t = provider._ticker("TCS")
-        assert t.ticker == "TCS.NS"
+        assert t.ticker == "TCS"
 
     def test_ticker_preserves_ns(self, provider):
         t = provider._ticker("TCS.NS")
@@ -27,11 +28,19 @@ class TestYFinanceProvider:
 
     def test_ticker_uppercase(self, provider):
         t = provider._ticker("infy")
-        assert t.ticker == "INFY.NS"
+        assert t.ticker == "INFY"
 
     def test_ticker_strips(self, provider):
         t = provider._ticker("  TCS  ")
-        assert t.ticker == "TCS.NS"
+        assert t.ticker == "TCS"
+
+    def test_ticker_preserves_us_ticker(self, provider):
+        t = provider._ticker("AAPL")
+        assert t.ticker == "AAPL"
+
+    def test_ticker_preserves_explicit_suffixes(self, provider):
+        t = provider._ticker("0700.HK")
+        assert t.ticker == "0700.HK"
 
 
 class TestGetProvider:

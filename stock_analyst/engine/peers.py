@@ -36,12 +36,20 @@ class PeerAnalyzer:
         self._cache = cache
         self._config = config
 
-    def _full_symbol(self, symbol: str) -> str:
-        """Normalize symbol to include exchange suffix based on config default."""
+    def _full_symbol(self, symbol: str, region: str = "in") -> str:
+        """Normalize symbol to include exchange suffix based on region.
+        
+        - Preserves explicit exchange suffixes.
+        - For India region, appends .NS if no suffix.
+        - For other regions, leaves as-is (yfinance handles US/EU/Asia tickers directly).
+        """
         s = symbol.upper().strip()
-        if s.endswith(".NS") or s.endswith(".BO"):
+        explicit_suffixes = (".NS", ".BO", ".L", ".DE", ".PA", ".TO", ".AX", ".HK", ".SS", ".SZ", ".T", ".KS", ".SI", ".AS", ".MC", ".SW", ".BR", ".CO", ".HE", ".LS", ".OL", ".ST", ".VI")
+        if any(s.endswith(suf) for suf in explicit_suffixes):
             return s
-        return f"{s}{self._config.default_exchange}"
+        if region == "in":
+            return f"{s}{self._config.default_exchange}"
+        return s
 
     def discover_peers(self, symbol: str, region: str = "in") -> List[str]:
         """Discover peer symbols. Tries yfinance Industry API first, screener.in second (India only)."""
@@ -134,14 +142,14 @@ class PeerAnalyzer:
             logger.debug("Screener.in scraping failed: %s", e)
             return []
 
-    def get_peer_fundamentals(self, symbol: str, peers: List[str]) -> Dict[str, Any]:
+    def get_peer_fundamentals(self, symbol: str, peers: List[str], region: str = "in") -> Dict[str, Any]:
         """Fetch fundamental metrics for target + peers for comparison."""
-        cache_key = f"peer_fundamentals:{symbol}"
+        cache_key = f"peer_fundamentals:{symbol}:{region}"
         cached = self._cache.get(cache_key)
         if cached:
             return cached
 
-        all_symbols = [self._full_symbol(symbol)] + [self._full_symbol(p) for p in peers]
+        all_symbols = [self._full_symbol(symbol, region=region)] + [self._full_symbol(p, region=region) for p in peers]
         results = {}
 
         for sym in all_symbols:
@@ -168,9 +176,9 @@ class PeerAnalyzer:
         self._cache.set(cache_key, results)
         return results
 
-    def get_peer_technicals(self, symbol: str, peers: List[str]) -> Dict[str, Any]:
+    def get_peer_technicals(self, symbol: str, peers: List[str], region: str = "in") -> Dict[str, Any]:
         """Fetch technical signals for target + peers."""
-        cache_key = f"peer_technicals:{symbol}"
+        cache_key = f"peer_technicals:{symbol}:{region}"
         cached = self._cache.get(cache_key)
         if cached:
             return cached
@@ -179,7 +187,7 @@ class PeerAnalyzer:
         from stock_analyst.engine.technicals import TechnicalAnalyzer
 
         ta_analyzer = TechnicalAnalyzer(self._provider, self._cache, self._config)
-        all_symbols = [self._full_symbol(symbol)] + [self._full_symbol(p) for p in peers]
+        all_symbols = [self._full_symbol(symbol, region=region)] + [self._full_symbol(p, region=region) for p in peers]
         results = {}
 
         for sym in all_symbols:

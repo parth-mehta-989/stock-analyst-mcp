@@ -43,7 +43,7 @@ class TestAnalyze:
         with patch("stock_analyst.engine.peers.yf"):
             result = stock_analyst.analyze("TCS", include_peers=False)
         assert isinstance(result, dict)
-        assert result["symbol"] == "TCS"
+        assert result["symbol"] == "TCS.NS"  # symbol resolved to NSE exchange suffix
 
     def test_includes_sections(self, setup_mocks):
         with patch("stock_analyst.engine.peers.yf"):

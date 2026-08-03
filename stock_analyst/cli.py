@@ -98,27 +98,27 @@ def main():
             filters["dividend_yield_min"] = args.dividend_yield_min
         result = stock_analyst.screen_stocks(filters, region=args.region, sort_by=args.sort_by, limit=args.limit)
     elif args.raw and args.symbol:
-        result = stock_analyst.get_raw_data(args.symbol, args.raw)
+        result = stock_analyst.get_raw_data(args.symbol, args.raw, region=args.region)
     elif args.symbols and args.compare:
         symbol_list = [s.strip() for s in args.symbols.split(",") if s.strip()]
-        result = stock_analyst.compare_stocks(symbol_list)
+        result = stock_analyst.compare_stocks(symbol_list, region=args.region)
     elif args.symbol:
         if args.analysis == "full":
             result = stock_analyst.analyze(args.symbol, region=args.region)
         elif args.analysis == "fundamentals":
-            result = stock_analyst.get_fundamentals(args.symbol)
+            result = stock_analyst.get_fundamentals(args.symbol, region=args.region)
         elif args.analysis == "technicals":
-            result = stock_analyst.get_technicals(args.symbol, period=args.period)
+            result = stock_analyst.get_technicals(args.symbol, region=args.region, period=args.period)
         elif args.analysis == "peers":
             result = stock_analyst.get_peer_comparison(args.symbol, region=args.region)
         elif args.analysis == "dcf":
-            result = stock_analyst.get_dcf_valuation(args.symbol)
+            result = stock_analyst.get_dcf_valuation(args.symbol, region=args.region)
         elif args.analysis == "forecast":
-            result = stock_analyst.get_revenue_forecast(args.symbol)
+            result = stock_analyst.get_revenue_forecast(args.symbol, region=args.region)
         elif args.analysis == "news":
-            result = stock_analyst.get_news(args.symbol)
+            result = stock_analyst.get_news(args.symbol, region=args.region)
         elif args.analysis == "asset":
-            result = stock_analyst.analyze_asset(args.symbol, asset_type=args.asset_type)
+            result = stock_analyst.analyze_asset(args.symbol, asset_type=args.asset_type, region=args.region)
     else:
         parser.print_help()
         sys.exit(1)

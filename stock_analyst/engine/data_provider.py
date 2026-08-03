@@ -24,8 +24,6 @@ class YFinanceProvider:
 
     def _ticker(self, symbol: str) -> yf.Ticker:
         sym = symbol.upper().strip()
-        if not (sym.endswith(".NS") or sym.endswith(".BO")):
-            sym = f"{sym}{self._exchange}"
         return yf.Ticker(sym)
 
     def get_info(self, symbol: str) -> Dict[str, Any]:

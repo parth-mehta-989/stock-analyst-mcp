@@ -37,85 +37,109 @@ def _init():
         _provider = get_provider(_config)
 
 
+def _resolve_symbol(symbol: str, region: str = "in") -> str:
+    """Resolve bare symbol to exchange suffix based on region.
+    
+    - Preserves explicit exchange suffixes (.NS, .BO, .L, .DE, .HK, etc.)
+    - For India (in), appends .NS if no suffix
+    - For other regions, leaves as-is (yfinance handles US/EU/Asia tickers directly)
+    """
+    s = symbol.upper().strip()
+    explicit_suffixes = (".NS", ".BO", ".L", ".DE", ".PA", ".TO", ".AX", ".HK", ".SS", ".SZ", ".T", ".KS", ".SI", ".AS", ".MC", ".SW", ".BR", ".CO", ".HE", ".LS", ".OL", ".ST", ".VI")
+    if any(s.endswith(suf) for suf in explicit_suffixes):
+        return s
+    if region == "in":
+        return f"{s}.NS"
+    return s
+
+
 def analyze(symbol: str, region: str = "in", include_peers: bool = True) -> dict[str, Any]:
     """Full analysis: fundamentals + technicals + peers + DCF + forecast + news."""
     _init()
-    report = _build_report(symbol, region=region, include_peers=include_peers)
+    resolved_symbol = _resolve_symbol(symbol, region)
+    report = _build_report(resolved_symbol, region=region, include_peers=include_peers)
     return report.to_dict()
 
 
-def get_fundamentals(symbol: str) -> dict[str, Any]:
+def get_fundamentals(symbol: str, region: str = "in") -> dict[str, Any]:
     """Financial ratios only."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region)
     fa = FundamentalAnalyzer(_provider, _cache, _config)
-    data = fa.fetch_all(symbol)
+    data = fa.fetch_all(resolved_symbol)
     return run_ratios(data["ratio_input"], _config)
 
 
-def get_technicals(symbol: str, period: str = "") -> dict[str, Any]:
+def get_technicals(symbol: str, region: str = "in", period: str = "") -> dict[str, Any]:
     """Technical signals only."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region)
     ta = TechnicalAnalyzer(_provider, _cache, _config)
-    return ta.analyze(symbol, period=period)
+    return ta.analyze(resolved_symbol, period=period)
 
 
 def get_peer_comparison(symbol: str, region: str = "in") -> dict[str, Any]:
     """Peer comparison tables."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region)
     pa = PeerAnalyzer(_provider, _cache, _config)
-    peers = pa.discover_peers(symbol, region=region)
-    fund = pa.get_peer_fundamentals(symbol, peers)
-    tech = pa.get_peer_technicals(symbol, peers)
+    peers = pa.discover_peers(resolved_symbol, region=region)
+    fund = pa.get_peer_fundamentals(resolved_symbol, peers, region=region)
+    tech = pa.get_peer_technicals(resolved_symbol, peers, region=region)
     return build_peer_comparison(
-        symbol, fund, tech,
+        resolved_symbol, fund, tech,
         _config.peer_fundamental_metrics_list,
         _config.peer_technical_metrics_list,
     )
 
 
-def get_dcf_valuation(symbol: str) -> dict[str, Any]:
+def get_dcf_valuation(symbol: str, region: str = "in") -> dict[str, Any]:
     """DCF valuation summary."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region)
     fa = FundamentalAnalyzer(_provider, _cache, _config)
-    data = fa.fetch_all(symbol)
+    data = fa.fetch_all(resolved_symbol)
     return run_dcf(data["dcf_input"], _config)
 
 
-def get_revenue_forecast(symbol: str) -> dict[str, Any]:
+def get_revenue_forecast(symbol: str, region: str = "in") -> dict[str, Any]:
     """Revenue forecast: base/bull/bear scenarios."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region)
     fa = FundamentalAnalyzer(_provider, _cache, _config)
-    data = fa.fetch_all(symbol)
+    data = fa.fetch_all(resolved_symbol)
     return run_forecast(data["forecast_input"], _config)
 
 
-def get_news(symbol: str) -> dict[str, Any]:
+def get_news(symbol: str, region: str = "in") -> dict[str, Any]:
     """News + analyst recommendations."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region)
     na = NewsAnalyzer(_provider, _cache, _config)
-    return na.analyze(symbol)
+    return na.analyze(resolved_symbol)
 
 
-def compare_stocks(symbols: list[str]) -> dict[str, Any]:
+def compare_stocks(symbols: list[str], region: str = "in") -> dict[str, Any]:
     """Side-by-side comparison of multiple stocks."""
     _init()
     results = {}
     for sym in symbols:
-        results[sym] = analyze(sym, include_peers=False)
+        results[sym] = analyze(sym, region=region, include_peers=False)
     return results
 
 
-def get_raw_data(symbol: str, data_type: str) -> dict[str, Any]:
+def get_raw_data(symbol: str, data_type: str, region: str = "in") -> dict[str, Any]:
     """Fetch cached raw data."""
     _init()
-    key = f"raw:{symbol.upper().strip()}:{data_type}"
+    resolved_symbol = _resolve_symbol(symbol, region)
+    key = f"raw:{resolved_symbol}:{data_type}"
     data = _cache.get(key)
     if data is None:
         # Trigger a fetch to populate cache
         fa = FundamentalAnalyzer(_provider, _cache, _config)
-        fa.fetch_all(symbol)
+        fa.fetch_all(resolved_symbol)
         data = _cache.get(key)
-    return data or {"error": f"No cached data for {symbol}:{data_type}"}
+    return data or {"error": f"No cached data for {resolved_symbol}:{data_type}"}
 
 
 def get_market_mood(region: str = "in") -> dict[str, Any]:
@@ -158,13 +182,15 @@ def search_tickers(
 def analyze_asset(
     symbol: str,
     asset_type: str = "stock",
+    region: str = "in",
     include_fundamentals: bool = True,
     include_technicals: bool = True,
 ) -> dict[str, Any]:
     """Analyze any asset: stock, ETF, index, commodity, crypto, currency."""
     _init()
+    resolved_symbol = _resolve_symbol(symbol, region) if asset_type == "stock" else symbol
     analyzer = MultiAssetAnalyzer(_provider, _cache, _config)
-    return analyzer.analyze_asset(symbol, asset_type=asset_type, 
+    return analyzer.analyze_asset(resolved_symbol, asset_type=asset_type, 
                                   include_fundamentals=include_fundamentals,
                                   include_technicals=include_technicals)
 
@@ -328,8 +354,8 @@ def _build_report(symbol: str, region: str = "in", include_peers: bool = True) -
             pa = PeerAnalyzer(_provider, _cache, _config)
             peers = pa.discover_peers(symbol, region=region)
             if peers:
-                fund = pa.get_peer_fundamentals(symbol, peers)
-                tech = pa.get_peer_technicals(symbol, peers)
+                fund = pa.get_peer_fundamentals(symbol, peers, region=region)
+                tech = pa.get_peer_technicals(symbol, peers, region=region)
                 report.peer_comparison = build_peer_comparison(
                     symbol, fund, tech,
                     _config.peer_fundamental_metrics_list,
