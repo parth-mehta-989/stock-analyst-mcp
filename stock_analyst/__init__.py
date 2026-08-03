@@ -11,8 +11,10 @@ from stock_analyst.cache import get_cache
 from stock_analyst.config import Settings, get_settings
 from stock_analyst.engine.data_provider import get_provider
 from stock_analyst.engine.fundamentals import FundamentalAnalyzer
+from stock_analyst.engine.market import MarketAnalyzer
 from stock_analyst.engine.news import NewsAnalyzer
 from stock_analyst.engine.peers import PeerAnalyzer
+from stock_analyst.engine.screener import StockScreener
 from stock_analyst.engine.technicals import TechnicalAnalyzer
 from stock_analyst.fa.dcf_runner import run_dcf
 from stock_analyst.fa.forecast_runner import run_forecast
@@ -112,6 +114,30 @@ def get_raw_data(symbol: str, data_type: str) -> dict[str, Any]:
         fa.fetch_all(symbol)
         data = _cache.get(key)
     return data or {"error": f"No cached data for {symbol}:{data_type}"}
+
+
+def get_market_mood() -> dict[str, Any]:
+    """Market mood: MMI + India VIX + Nifty/Sensex."""
+    _init()
+    ma = MarketAnalyzer(_cache, _config)
+    return ma.get_mood()
+
+
+def screen_stocks(
+    filters: dict[str, Any] | None = None,
+    sort_by: str = "market_cap",
+    sort_asc: bool = False,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Screen Indian stocks by criteria (market cap, PE, ROE, sector, etc.)."""
+    _init()
+    screener = StockScreener(_cache, _config)
+    return screener.screen(filters or {}, sort_by=sort_by, sort_asc=sort_asc, limit=limit)
+
+
+def get_screener_filters() -> dict[str, Any]:
+    """Return available screener filter keys and descriptions."""
+    return StockScreener.available_filters()
 
 
 def get_config() -> dict[str, Any]:

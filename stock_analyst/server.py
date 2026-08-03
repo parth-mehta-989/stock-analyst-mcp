@@ -113,7 +113,7 @@ def get_revenue_forecast(symbol: str) -> str:
 
 @mcp.tool()
 def get_news(symbol: str) -> str:
-    """Retrieve recent news headlines (latest 5) and analyst recommendation summary (buy/hold/sell counts).
+    """Retrieve recent news headlines with sentiment analysis (VADER), article snippets, and analyst recommendation summary.
 
     Args:
         symbol: Stock ticker symbol.
@@ -161,6 +161,56 @@ def get_raw_data(symbol: str, data_type: str) -> str:
     except Exception as e:
         logger.exception("get_raw_data failed")
         return _error("raw_data_failed", str(e))
+
+
+@mcp.tool()
+def get_market_mood() -> str:
+    """Retrieve current market mood: Market Mood Index (MMI) from tickertape.in, India VIX fear gauge, Nifty 50 and Sensex levels with day change, and overall market assessment.
+
+    No arguments needed. Returns macro market context for investment timing decisions.
+    """
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_market_mood())
+    except Exception as e:
+        logger.exception("get_market_mood failed")
+        return _error("market_mood_failed", str(e))
+
+
+@mcp.tool()
+def screen_stocks(filters: str = "", sort_by: str = "market_cap", limit: int = 50) -> str:
+    """Screen Indian stocks by fundamental, valuation, and technical criteria.
+
+    Args:
+        filters: JSON string of filter criteria. Example: '{"sector": "Technology", "pe_max": 30, "roe_min": 0.15, "market_cap_min": 50000000000}'.
+            Available filters: sector, industry, market_cap_min/max, pe_min/max, pb_min/max,
+            roe_min/max, dividend_yield_min/max, revenue_growth_min/max, debt_to_equity_min/max,
+            current_ratio_min/max, 52w_change_min/max, beta_min/max.
+        sort_by: Sort field — one of: market_cap, pe, pb, roe, dividend_yield, revenue_growth, price, change, volume, ticker. Default: market_cap.
+        limit: Max results (1-250). Default: 50.
+    """
+    try:
+        import json as _json
+        import stock_analyst
+        filter_dict = _json.loads(filters) if filters else {}
+        return _ok(stock_analyst.screen_stocks(filter_dict, sort_by=sort_by, limit=limit))
+    except Exception as e:
+        logger.exception("screen_stocks failed")
+        return _error("screen_failed", str(e))
+
+
+@mcp.tool()
+def get_screener_filters() -> str:
+    """List available filter keys, descriptions, and sort options for the stock screener.
+
+    Call this before screen_stocks to see what filters you can use.
+    """
+    try:
+        import stock_analyst
+        return _ok(stock_analyst.get_screener_filters())
+    except Exception as e:
+        logger.exception("get_screener_filters failed")
+        return _error("screener_filters_failed", str(e))
 
 
 @mcp.tool()

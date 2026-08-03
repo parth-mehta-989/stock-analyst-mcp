@@ -53,7 +53,10 @@ Or if installed via pip:
 | `get_peer_comparison` | Peer fundamental + technical metrics with rankings |
 | `get_dcf_valuation` | DCF: WACC (India-adjusted), equity value/share, sensitivity range |
 | `get_revenue_forecast` | Revenue forecast: base/bull/bear scenarios |
-| `get_news` | Recent headlines + analyst recommendation summary |
+| `get_news` | News headlines with VADER sentiment + article snippets + analyst recommendations |
+| `get_market_mood` | Market Mood Index (tickertape), India VIX, Nifty 50, Sensex |
+| `screen_stocks` | Screen Indian stocks by filters (sector, PE, ROE, market cap, etc.) |
+| `get_screener_filters` | List available screener filter keys and sort options |
 | `compare_stocks` | Side-by-side comparison of multiple stocks |
 | `get_raw_data` | Fetch cached raw financials for deep dives |
 | `get_config` | View current configuration settings for all analysis tools |
@@ -166,6 +169,13 @@ stock-analyst --symbol RELIANCE --format markdown
 
 # Raw data
 stock-analyst --symbol RELIANCE --raw financials
+
+# Market mood (no symbol needed)
+stock-analyst --analysis market-mood
+
+# Stock screener
+stock-analyst --screen --sector Technology --pe-max 30 --roe-min 0.15
+stock-analyst --screen --market-cap-min 50000000000 --sort-by pe --limit 20
 ```
 
 ## Configuration
@@ -191,11 +201,26 @@ See `configurations.env.example` for the full list.
 ## Python Library
 
 ```python
-from stock_analyst import analyze, get_fundamentals, get_technicals
+from stock_analyst import (
+    analyze, get_fundamentals, get_technicals,
+    get_news, get_market_mood, screen_stocks,
+)
 
 result = analyze("RELIANCE")
 ratios = get_fundamentals("TCS")
 signals = get_technicals("INFY", period="6mo")
+
+# News with sentiment
+news = get_news("TCS")
+# Returns headlines with sentiment_score, sentiment_label, snippet
+
+# Market mood
+mood = get_market_mood()
+# Returns MMI value/label, India VIX, Nifty 50, Sensex, assessment
+
+# Stock screener
+results = screen_stocks({"sector": "Technology", "pe_max": 30, "roe_min": 0.15})
+# Returns matching stocks with fundamentals from yfinance
 ```
 
 ## Testing
@@ -216,8 +241,10 @@ pytest tests/test_peers.py -v
 
 ## Data Sources
 
-- **yfinance** — OHLCV, financials, balance sheet, cashflow, info, peer discovery via Industry API
-- **screener.in** — peer discovery fallback (best-effort, graceful degradation)
+- **yfinance** — OHLCV, financials, balance sheet, cashflow, info, peer discovery via Industry API, stock screener via EquityQuery
+- **screener.in** — peer discovery + stock screener fallback (best-effort, graceful degradation)
+- **tickertape.in** — Market Mood Index (MMI) scraping
+- **VADER** — headline sentiment analysis (vaderSentiment)
 - **India-adjusted defaults** — risk-free rate 7%, cost of debt 9%, tax 25%
 
 ## License

@@ -74,6 +74,19 @@ class Settings(BaseSettings):
     fa_variance_threshold_amt: float = 5000000
     fa_forecast_scenarios: str = "base,bull,bear"
 
+    # News & Sentiment
+    news_fetch_snippets: bool = True
+    news_max_headlines: int = 5
+    news_snippet_max_chars: int = 500
+
+    # Market Mood
+    market_mood_url: str = "https://www.tickertape.in/market-mood-index"
+
+    # Stock Screener
+    screener_max_results: int = 50
+    nse_equity_list_url: str = "https://nsearchives.nseinstitute.com/content/equities/EQUITY_L.csv"
+    screener_screen_url: str = "https://www.screener.in/screen/raw/"
+
     # Peer Comparison
     peers_max_count: int = 10
     peers_fundamental_comparison: bool = True

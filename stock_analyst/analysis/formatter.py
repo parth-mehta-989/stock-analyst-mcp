@@ -90,8 +90,16 @@ def to_markdown(report: StockReport) -> str:
     if report.news:
         lines.append("## News & Recommendations")
         lines.append("")
+        sentiment_summary = report.news.get("sentiment_summary", {})
+        if sentiment_summary:
+            label = sentiment_summary.get("overall_label", "N/A")
+            score = sentiment_summary.get("average_score", "N/A")
+            lines.append(f"**Overall Sentiment**: {label} (score: {score})")
+            lines.append("")
         for h in report.news.get("headlines", []):
-            lines.append(f"- {h.get('title', '')} ({h.get('publisher', '')})")
+            sent_label = h.get("sentiment_label", "")
+            sent_tag = f" [{sent_label}]" if sent_label else ""
+            lines.append(f"- {h.get('title', '')} ({h.get('publisher', '')}){sent_tag}")
         lines.append("")
 
     return "\n".join(lines)
