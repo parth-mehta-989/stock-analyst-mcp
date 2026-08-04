@@ -195,7 +195,12 @@ class TestGetPeerFundamentals:
 
 class TestGetPeerTechnicals:
     def test_fetches_all_with_exchange_suffix(self, peer_analyzer, sample_ohlcv):
-        peer_analyzer._provider.get_history.return_value = sample_ohlcv
+        # get_peer_technicals now uses get_history_batch for batch download
+        peer_analyzer._provider.get_history_batch.return_value = {
+            "TCS.NS": sample_ohlcv,
+            "INFY.NS": sample_ohlcv,
+            "WIPRO.BO": sample_ohlcv,
+        }
         result = peer_analyzer.get_peer_technicals("TCS", ["INFY.NS", "WIPRO.BO"])
         assert "TCS.NS" in result
         assert "INFY.NS" in result

@@ -29,6 +29,25 @@ class TechnicalAnalyzer:
             return cached
 
         df = self._provider.get_history(symbol, period, interval)
+        result = self._compute(df, symbol)
+        if "error" not in result:
+            self._cache.set(cache_key, result)
+        return result
+
+    def analyze_from_df(self, df: pd.DataFrame, symbol: str) -> Dict[str, Any]:
+        """Compute technicals from a pre-fetched DataFrame (avoids redundant download)."""
+        cache_key = f"technicals:{symbol}:{self._config.default_period}:{self._config.default_interval}"
+        cached = self._cache.get(cache_key)
+        if cached:
+            return cached
+
+        result = self._compute(df, symbol)
+        if "error" not in result:
+            self._cache.set(cache_key, result)
+        return result
+
+    def _compute(self, df: pd.DataFrame, symbol: str) -> Dict[str, Any]:
+        """Run indicator pipeline on a DataFrame."""
         if df.empty:
             return {"error": f"No historical data for {symbol}"}
 
@@ -55,9 +74,7 @@ class TechnicalAnalyzer:
             if bb is not None:
                 df = pd.concat([df, bb], axis=1)
 
-        result = self._build_summary(df, symbol)
-        self._cache.set(cache_key, result)
-        return result
+        return self._build_summary(df, symbol)
 
     def _build_summary(self, df: pd.DataFrame, symbol: str) -> Dict[str, Any]:
         # Drop rows with NaN Close to avoid stale/weekend entries

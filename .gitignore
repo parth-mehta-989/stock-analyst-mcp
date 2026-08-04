@@ -10,3 +10,8 @@ dump.rdb
 .vscode/
 configurations.env
 PUBLISHING.md
+.devin
+.windsurf
+.pytest_cache/
+context
+*graphify-out*

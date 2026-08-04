@@ -10,6 +10,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from stock_analyst.cache.base import Cache
 from stock_analyst.config import Settings
 from stock_analyst.engine.data_provider import DataProvider
+from stock_analyst.utils.concurrency import parallel_map
 
 logger = logging.getLogger(__name__)
 
@@ -82,32 +83,38 @@ class NewsAnalyzer:
         news_items = self._provider.get_news(symbol)
         sentiment_scores: List[float] = []
 
-        for item in news_items[:max_headlines]:
-            if not isinstance(item, dict):
-                continue
+        valid_items = [i for i in news_items[:max_headlines] if isinstance(i, dict)]
 
+        # Build headlines with sentiment (CPU-bound, fast)
+        headlines: List[Dict[str, Any]] = []
+        for item in valid_items:
             title = item.get("title", "")
-            link = item.get("link", "")
-
-            headline: Dict[str, Any] = {
+            sent = _sentiment(title)
+            sentiment_scores.append(sent["score"])
+            headlines.append({
                 "title": title,
                 "publisher": item.get("publisher", ""),
-                "link": link,
-            }
+                "link": item.get("link", ""),
+                "sentiment_score": sent["score"],
+                "sentiment_label": sent["label"],
+                "snippet": "",
+            })
 
-            # Sentiment on title
-            sent = _sentiment(title)
-            headline["sentiment_score"] = sent["score"]
-            headline["sentiment_label"] = sent["label"]
-            sentiment_scores.append(sent["score"])
+        # Fetch snippets in parallel (I/O-bound)
+        if fetch_snippets:
+            links = [h["link"] for h in headlines]
+            snippets = parallel_map(
+                lambda url: _fetch_snippet(url, max_chars=snippet_max),
+                [lnk for lnk in links if lnk],
+                label="snippets",
+            )
+            # Map snippets back by index
+            snippet_iter = iter(snippets)
+            for h in headlines:
+                if h["link"]:
+                    h["snippet"] = next(snippet_iter, "")
 
-            # Article snippet
-            if fetch_snippets and link:
-                headline["snippet"] = _fetch_snippet(link, max_chars=snippet_max)
-            else:
-                headline["snippet"] = ""
-
-            result["headlines"].append(headline)
+        result["headlines"] = headlines
 
         # Aggregate sentiment summary
         if sentiment_scores:
