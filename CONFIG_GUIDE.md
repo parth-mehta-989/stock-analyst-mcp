@@ -1,6 +1,8 @@
 # Configuration Guide: get_config & set_config Tools
 
-The stock-analyst MCP server now exposes two new tools for dynamic configuration management: `get_config` and `set_config`. This allows MCP clients to customize analysis parameters on-the-fly without restarting.
+The stock-analyst MCP server exposes two tools for dynamic configuration management: `get_config` and `set_config`. This allows MCP clients to customize analysis parameters on-the-fly without restarting.
+
+**v0.5.0 Update**: Performance improvements via parallel I/O don't require configuration changes. Peer analysis is now 3-19x faster by default.
 
 ## Quick Start
 

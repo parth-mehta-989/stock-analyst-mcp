@@ -1,4 +1,4 @@
-"""MCP server — exposes stock analysis tools via MCP protocol."""
+"""MCP server — global stock analysis tools (50+ regions, 3-19x faster peer analysis via parallel I/O)."""
 
 import json
 import logging

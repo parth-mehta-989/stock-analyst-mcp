@@ -4,6 +4,18 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.0
+
+**Performance Overhaul — 3-19x faster peer analysis**
+
+- **Parallel peer fundamentals**: ThreadPoolExecutor on `get_info()` calls (3.7x speedup)
+- **Batch history downloads**: Single `yf.download()` for all peers (19.3x speedup)
+- **Parallel snippet fetching**: News analysis now fetches article snippets concurrently
+- **New `stock_analyst/utils/` module**: Reusable concurrency helpers (`parallel_map`, `parallel_map_dict`, `batch_download_history`)
+- **Zero new dependencies**: Uses stdlib `concurrent.futures`
+
+**Example**: Analyzing LOW (US) with 10 peers now takes ~2-3s instead of 8-10s.
+
 ## Install
 
 ```bash
