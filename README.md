@@ -4,7 +4,7 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
-## What's New in v0.5.0
+## What's New in v0.5.1
 
 **Performance Overhaul — 3-19x faster peer analysis**
 
