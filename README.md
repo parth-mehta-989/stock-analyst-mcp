@@ -4,6 +4,12 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.2
+
+**Screener Fix — `screen_stocks` works across regions**
+
+- **Fixed yfinance EquityQuery parameter**: `_size` → `size` in `yf.screen()` call, restoring screener results for India and other regions
+
 ## What's New in v0.5.1
 
 **Performance Overhaul — 3-19x faster peer analysis**

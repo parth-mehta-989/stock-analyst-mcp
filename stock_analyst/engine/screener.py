@@ -1,10 +1,8 @@
 """Stock screener: yfinance EquityQuery primary, NSE CSV + screener.in fallbacks."""
 
-import io
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import pandas as pd
 import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
@@ -16,7 +14,7 @@ from stock_analyst.config import Settings
 logger = logging.getLogger(__name__)
 
 # Maps user-friendly filter keys to EquityQuery field names
-_FILTER_MAP: Dict[str, str] = {
+_FILTER_MAP: dict[str, str] = {
     "market_cap_min": "intradaymarketcap",
     "market_cap_max": "intradaymarketcap",
     "pe_min": "peratio.lasttwelvemonths",
@@ -40,7 +38,7 @@ _FILTER_MAP: Dict[str, str] = {
 }
 
 # Sortable fields mapping
-_SORT_MAP: Dict[str, str] = {
+_SORT_MAP: dict[str, str] = {
     "market_cap": "intradaymarketcap",
     "pe": "peratio.lasttwelvemonths",
     "pb": "pricebookratio.quarterly",
@@ -54,9 +52,9 @@ _SORT_MAP: Dict[str, str] = {
 }
 
 
-def _build_equity_query(filters: Dict[str, Any], region: str = "in") -> EquityQuery:
+def _build_equity_query(filters: dict[str, Any], region: str = "in") -> EquityQuery:
     """Build EquityQuery from user-friendly filter dict."""
-    conditions: List[EquityQuery] = []
+    conditions: list[EquityQuery] = []
 
     # Filter to specified region
     conditions.append(EquityQuery("eq", ["region", region]))
@@ -91,12 +89,12 @@ class StockScreener:
 
     def screen(
         self,
-        filters: Dict[str, Any],
+        filters: dict[str, Any],
         region: str = "in",
         sort_by: str = "market_cap",
         sort_asc: bool = False,
-        limit: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        limit: int | None = None,
+    ) -> dict[str, Any]:
         """Screen stocks by criteria. Tries yfinance -> screener.in."""
         limit = limit or self._config.screener_max_results
 
@@ -122,12 +120,12 @@ class StockScreener:
 
     def _yfinance_screen(
         self,
-        filters: Dict[str, Any],
+        filters: dict[str, Any],
         region: str,
         sort_by: str,
         sort_asc: bool,
         limit: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Screen using yfinance EquityQuery."""
         try:
             query = _build_equity_query(filters, region=region)
@@ -137,7 +135,7 @@ class StockScreener:
                 query,
                 sortField=sort_field,
                 sortAsc=sort_asc,
-                _size=min(limit, 250),
+                size=min(limit, 250),
             )
 
             if not response or "quotes" not in response:
@@ -167,15 +165,15 @@ class StockScreener:
                 "filters_applied": filters,
                 "stocks": stocks,
             }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug("yfinance screen failed: %s", e)
             return {"source": "yfinance", "region": region, "count": 0, "stocks": []}
 
     def _screener_in_screen(
         self,
-        filters: Dict[str, Any],
+        filters: dict[str, Any],
         limit: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fallback: scrape screener.in raw screen."""
         try:
             query_parts = []
@@ -237,12 +235,12 @@ class StockScreener:
                 "filters_applied": filters,
                 "stocks": stocks,
             }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug("screener.in screen failed: %s", e)
             return {"source": "screener.in", "count": 0, "stocks": []}
 
     @staticmethod
-    def available_filters() -> Dict[str, Any]:
+    def available_filters() -> dict[str, Any]:
         """Return available filter keys and their descriptions."""
         return {
             "filters": {
