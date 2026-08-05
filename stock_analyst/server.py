@@ -314,10 +314,9 @@ def main():
     config = get_settings()
     logging.basicConfig(level=getattr(logging, config.log_level, logging.INFO))
     transport = config.mcp_transport
-    kwargs = {}
     if transport == "streamable-http":
-        kwargs["port"] = config.mcp_port
-    mcp.run(transport=transport, **kwargs)
+        mcp.settings.port = config.mcp_port
+    mcp.run(transport=transport)
 
 
 if __name__ == "__main__":
