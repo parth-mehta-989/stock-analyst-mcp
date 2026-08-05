@@ -4,6 +4,14 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.3
+
+**Compatibility Fix — `mcp>=1.28` support**
+
+- **Fixed breaking import**: Replaced removed `MCPServer` with `FastMCP` from `mcp.server.fastmcp`
+- **Pinned mcp dependency**: `mcp>=1.0.0,<3.0.0` to prevent future breakage
+- **Added requirements.txt** for pip-based installs
+
 ## What's New in v0.5.2
 
 **Screener Fix — `screen_stocks` works across regions**

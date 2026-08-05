@@ -3,13 +3,13 @@
 import json
 import logging
 
-from mcp.server import MCPServer
+from mcp.server.fastmcp import FastMCP
 
 from stock_analyst.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-mcp = MCPServer("stock-analyst")
+mcp = FastMCP("stock-analyst")
 
 
 def _error(code: str, message: str) -> str:

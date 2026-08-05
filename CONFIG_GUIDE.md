@@ -2,6 +2,8 @@
 
 The stock-analyst MCP server exposes two tools for dynamic configuration management: `get_config` and `set_config`. This allows MCP clients to customize analysis parameters on-the-fly without restarting.
 
+**v0.5.3 Update**: Fix `mcp>=1.28` compatibility — replaced removed `MCPServer` import with `FastMCP`.
+
 **v0.5.2 Update**: `screen_stocks` now works across regions. The yfinance `yf.screen()` call was fixed to use `size` instead of `_size`.
 
 **v0.5.1 Update**: Performance improvements via parallel I/O don't require configuration changes. Peer analysis is now 3-19x faster by default.
