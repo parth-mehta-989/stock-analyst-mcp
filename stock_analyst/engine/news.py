@@ -85,16 +85,39 @@ class NewsAnalyzer:
 
         valid_items = [i for i in news_items[:max_headlines] if isinstance(i, dict)]
 
+        def _normalize_news(item: Dict[str, Any]) -> Dict[str, str]:
+            """Handle both legacy and new yfinance news formats."""
+            if "content" in item and isinstance(item["content"], dict):
+                content = item["content"]
+                provider = content.get("provider") or {}
+                url_obj = content.get("clickThroughUrl") or content.get("canonicalUrl") or {}
+                return {
+                    "title": content.get("title", ""),
+                    "summary": content.get("summary", content.get("description", "")),
+                    "publisher": provider.get("displayName", "") if isinstance(provider, dict) else "",
+                    "link": url_obj.get("url", "") if isinstance(url_obj, dict) else "",
+                    "pub_date": content.get("pubDate", content.get("displayTime", "")),
+                }
+            return {
+                "title": item.get("title", ""),
+                "summary": item.get("summary", item.get("description", "")),
+                "publisher": item.get("publisher", ""),
+                "link": item.get("link", ""),
+                "pub_date": item.get("pubDate", ""),
+            }
+
         # Build headlines with sentiment (CPU-bound, fast)
         headlines: List[Dict[str, Any]] = []
         for item in valid_items:
-            title = item.get("title", "")
-            sent = _sentiment(title)
+            normalized = _normalize_news(item)
+            text = normalized["title"] or normalized["summary"]
+            sent = _sentiment(text)
             sentiment_scores.append(sent["score"])
             headlines.append({
-                "title": title,
-                "publisher": item.get("publisher", ""),
-                "link": item.get("link", ""),
+                "title": normalized["title"],
+                "publisher": normalized["publisher"],
+                "link": normalized["link"],
+                "pub_date": normalized["pub_date"],
                 "sentiment_score": sent["score"],
                 "sentiment_label": sent["label"],
                 "snippet": "",

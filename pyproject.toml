@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "stock-analyst-mcp"
-version = "0.5.4"
+version = "0.5.5"
 description = "MCP server for global stock market analysis — fundamentals, technicals, DCF, peer comparison, 3-19x faster with parallel I/O"
 readme = "README.md"
 license = "MIT"

@@ -4,6 +4,14 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.5
+
+**News Fix — yfinance format change**
+
+- **Fixed empty headlines**: yfinance now nests news fields under `content`
+- **Correct mapping**: title, publisher, link, pub_date extracted from `content.*`
+- **Backward compatible**: still handles legacy top-level news format
+
 ## What's New in v0.5.4
 
 **API Fix — `FastMCP.run()` compatibility**
