@@ -4,6 +4,13 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.4
+
+**API Fix — `FastMCP.run()` compatibility**
+
+- **Fixed TypeError**: `FastMCP.run()` doesn't accept `port` kwarg
+- **Port configuration**: Set via `mcp.settings.port` before calling `run()`
+
 ## What's New in v0.5.3
 
 **Compatibility Fix — `mcp>=1.28` support**

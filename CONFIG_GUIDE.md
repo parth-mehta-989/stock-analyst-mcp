@@ -2,6 +2,8 @@
 
 The stock-analyst MCP server exposes two tools for dynamic configuration management: `get_config` and `set_config`. This allows MCP clients to customize analysis parameters on-the-fly without restarting.
 
+**v0.5.4 Update**: Fix `FastMCP.run()` API — remove unsupported `port` kwarg, set via `settings.port` instead.
+
 **v0.5.3 Update**: Fix `mcp>=1.28` compatibility — replaced removed `MCPServer` import with `FastMCP`.
 
 **v0.5.2 Update**: `screen_stocks` now works across regions. The yfinance `yf.screen()` call was fixed to use `size` instead of `_size`.
