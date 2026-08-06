@@ -3,13 +3,13 @@
 import json
 import logging
 
-from mcp.server import MCPServer
+from mcp.server.fastmcp import FastMCP
 
 from stock_analyst.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-mcp = MCPServer("stock-analyst")
+mcp = FastMCP("stock-analyst")
 
 
 def _error(code: str, message: str) -> str:
@@ -314,10 +314,9 @@ def main():
     config = get_settings()
     logging.basicConfig(level=getattr(logging, config.log_level, logging.INFO))
     transport = config.mcp_transport
-    kwargs = {}
     if transport == "streamable-http":
-        kwargs["port"] = config.mcp_port
-    mcp.run(transport=transport, **kwargs)
+        mcp.settings.port = config.mcp_port
+    mcp.run(transport=transport)
 
 
 if __name__ == "__main__":

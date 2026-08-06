@@ -4,6 +4,29 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.5
+
+**News Fix — yfinance format change**
+
+- **Fixed empty headlines**: yfinance now nests news fields under `content`
+- **Correct mapping**: title, publisher, link, pub_date extracted from `content.*`
+- **Backward compatible**: still handles legacy top-level news format
+
+## What's New in v0.5.4
+
+**API Fix — `FastMCP.run()` compatibility**
+
+- **Fixed TypeError**: `FastMCP.run()` doesn't accept `port` kwarg
+- **Port configuration**: Set via `mcp.settings.port` before calling `run()`
+
+## What's New in v0.5.3
+
+**Compatibility Fix — `mcp>=1.28` support**
+
+- **Fixed breaking import**: Replaced removed `MCPServer` with `FastMCP` from `mcp.server.fastmcp`
+- **Pinned mcp dependency**: `mcp>=1.0.0,<3.0.0` to prevent future breakage
+- **Added requirements.txt** for pip-based installs
+
 ## What's New in v0.5.2
 
 **Screener Fix — `screen_stocks` works across regions**

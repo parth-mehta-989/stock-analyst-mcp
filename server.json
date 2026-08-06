@@ -3,12 +3,12 @@
   "name": "io.github.parth-mehta-989/stock-analyst-mcp",
   "title": "World Stock Market Analyst",
   "description": "World stock market analysis: fundamentals, technicals, DCF, peer comparison, forecast",
-  "version": "0.5.2",
+  "version": "0.5.5",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "stock-analyst-mcp",
-      "version": "0.5.2",
+      "version": "0.5.5",
       "transport": {
         "type": "stdio"
       }
