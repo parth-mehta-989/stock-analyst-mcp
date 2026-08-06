@@ -2,6 +2,8 @@
 
 The stock-analyst MCP server exposes two tools for dynamic configuration management: `get_config` and `set_config`. This allows MCP clients to customize analysis parameters on-the-fly without restarting.
 
+**v0.5.7 Update**: Requires Python >=3.13. Fixes `uvx` picking stale Python 3.12 causing pandas C extension crashes.
+
 **v0.5.6 Update**: Migrate to standalone FastMCP framework — replaced `mcp` SDK with `fastmcp>=3.4.0`. Eliminates v2.0.0 breaking changes, port now passed as kwarg to `run()`.
 
 **v0.5.5 Update**: Fix yfinance news format change — news items now have fields nested under `content`. Titles, publishers, links, and pub dates now populate correctly.
