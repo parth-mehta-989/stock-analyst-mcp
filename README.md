@@ -4,6 +4,15 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.6
+
+**MCP Framework Migration — FastMCP standalone**
+
+- **Replaced `mcp` SDK with standalone `fastmcp`**: Eliminates v2.0.0 breaking changes, no more `mcp.server.fastmcp` import errors
+- **Cleaner dependency**: `fastmcp>=3.4.0,<4.0.0` (Prefect-maintained, actively developed)
+- **Port configuration**: Now passed as kwarg to `mcp.run(transport=..., port=...)`
+- **Future-proof**: No SDK version conflicts, fastmcp handles all MCP protocol versions
+
 ## What's New in v0.5.5
 
 **News Fix — yfinance format change**
