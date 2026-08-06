@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 
 from fastmcp import FastMCP
 
@@ -311,6 +312,7 @@ def set_config(key: str, value: str) -> str:
 
 
 def main():
+    os.environ.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
     config = get_settings()
     logging.basicConfig(level=getattr(logging, config.log_level, logging.INFO))
     transport = config.mcp_transport

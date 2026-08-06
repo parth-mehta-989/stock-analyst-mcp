@@ -4,6 +4,13 @@ MCP server for global stock market analysis — fundamentals, technicals, DCF va
 
 <!-- mcp-name: io.github.parth-mehta-989/stock-analyst-mcp -->
 
+## What's New in v0.5.7
+
+**Python 3.13+ Requirement**
+
+- **Requires Python >=3.13**: Fixes `uvx` picking stale Python 3.12 which caused pandas C extension crashes (`ModuleNotFoundError: pandas._libs.pandas_parser`)
+- **`uvx stock-analyst-mcp` now works without `--python`**: uv/uvx auto-selects 3.13+
+
 ## What's New in v0.5.6
 
 **MCP Framework Migration — FastMCP standalone**
